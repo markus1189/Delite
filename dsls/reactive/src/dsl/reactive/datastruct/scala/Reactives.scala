@@ -1,4 +1,4 @@
-package dsl.reactive.datastruct
+package dsl.reactive.datastruct.scala
 
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
@@ -36,7 +36,7 @@ object Dependent {
   implicit def fromExpression[T](exp: => T): Handler[T] = Handler(exp)
 }
 
-class Var[T] private (initialValue: T) extends AccessableDepHolder[T] {
+class ReactiveVar[T] private (initialValue: T) extends AccessableDepHolder[T] {
   private var heldValue: T = initialValue
 
   def get = heldValue
@@ -51,8 +51,8 @@ class Var[T] private (initialValue: T) extends AccessableDepHolder[T] {
   def modify(f: T => T) = set(f(get))
 }
 
-object Var {
-  def apply[T](initialValue: T) = new Var(initialValue)
+object ReactiveVar {
+  def apply[T](initialValue: T) = new ReactiveVar(initialValue)
 }
 
 class Signal[+T] private (depHolders: Seq[DepHolder])(expr: => T)
