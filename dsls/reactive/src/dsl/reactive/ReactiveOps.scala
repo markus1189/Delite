@@ -43,9 +43,13 @@ trait ScalaGenReactiveOps extends ScalaGenBase {
   import IR._
 
   override def emitNode(sym: Sym[Any], rhs: Def[Any]) = rhs match {
-    case VarCreation(x) => stream.println("val " + quote(sym) + " = ReactiveVar(" + quote(x) + ")")
-    case VarGetContent(v) => stream.println("val " + quote(sym) + " = " + quote(v) + ".get")
-    case VarSetContent(v,x) => stream.println("val " + quote(sym) + " = " + quote(v) + ".set(" + quote(x) + ")")
-    case _ => super.emitNode(sym,rhs)
+    case VarCreation(x) =>
+      emitValDef(sym, "ReactiveVar(" + quote(x) + ")")
+    case VarGetContent(v) =>
+      emitValDef(sym, quote(v) + ".get")
+    case VarSetContent(v,x) =>
+      emitValDef(sym, quote(v) + ".set(" + quote(x) + ")")
+    case _ =>
+      super.emitNode(sym,rhs)
   }
 }
