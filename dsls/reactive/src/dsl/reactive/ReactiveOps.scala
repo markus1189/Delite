@@ -6,7 +6,8 @@ import scala.virtualization.lms.common.ScalaGenBase
 import scala.virtualization.lms.common.{ScalaGenEffect, Base, EffectExp}
 //import dsl.reactive.Types._
 
-trait ReactiveOps extends ReactiveVars
+trait ReactiveOps extends ReactiveVars with ReactiveSignals
+trait ReactiveOpsExp extends ReactiveVarsExp with ReactiveSignalsExp
 
 trait ReactiveVars extends Base {
   def ReactiveVar[T:Manifest](x: Rep[T]): Rep[ReactiveVar[T]] = varNew(x)
@@ -22,8 +23,6 @@ trait ReactiveVars extends Base {
   def varModifyContent[T:Manifest](v: Rep[ReactiveVar[T]], f: Rep[T] => Rep[T]): Rep[ReactiveVar[T]]
 }
 
-trait ReactiveOpsExp extends ReactiveVarsExp
-
 trait ReactiveVarsExp extends ReactiveVars with EffectExp {
   case class VarCreation[T:Manifest](x: Rep[T]) extends Def[ReactiveVar[T]]
   def varNew[T:Manifest](x: Rep[T]) = VarCreation[T](x)
@@ -36,6 +35,12 @@ trait ReactiveVarsExp extends ReactiveVars with EffectExp {
 
   case class VarModifyContent[T:Manifest](v: Rep[ReactiveVar[T]], f: Rep[T] => Rep[T]) extends Def[ReactiveVar[T]]
   def varModifyContent[T:Manifest](v: Rep[ReactiveVar[T]], f: Rep[T] => Rep[T]) = VarModifyContent(v,f)
+}
+
+trait ReactiveSignals extends Base {
+}
+
+trait ReactiveSignalsExp extends ReactiveSignals with EffectExp {
 }
 
 trait ScalaGenReactiveOps extends ScalaGenBase {
