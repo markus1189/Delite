@@ -10,5 +10,7 @@ trait HelloReactive extends ReactiveApplication {
     println(x.get)
     x.set(1337)
     println(x.get)
+    val y = ReactiveSignal(Seq(x)){ x.get + x.get }
+    println(y.getS)
   }
 }

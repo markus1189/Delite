@@ -1,10 +1,7 @@
 package dsl.reactive
 
-import scala.virtualization.lms.common.FunctionBlocksExp
 import dsl.reactive.datastruct.scala._
-import scala.virtualization.lms.common.ScalaGenBase
-import scala.virtualization.lms.common.{ScalaGenEffect, Base, EffectExp}
-//import dsl.reactive.Types._
+import scala.virtualization.lms.common._
 
 trait ReactiveOps extends ReactiveVars with ReactiveSignals
 trait ReactiveOpsExp extends ReactiveVarsExp with ReactiveSignalsExp
@@ -37,10 +34,24 @@ trait ReactiveVarsExp extends ReactiveVars with EffectExp {
   def varModifyContent[T:Manifest](v: Rep[ReactiveVar[T]], f: Rep[T] => Rep[T]) = VarModifyContent(v,f)
 }
 
+abstract class ReactiveSignal[+T:Manifest]
+
 trait ReactiveSignals extends Base {
+  def ReactiveSignal[T:Manifest](ds: Rep[Seq[DepHolder]])(f: Rep[T]): Rep[ReactiveSignal[T]] = signalNew(ds,f)
+  def signalNew[T:Manifest](ds: Rep[Seq[DepHolder]], f: Rep[T]): Rep[ReactiveSignal[T]]
+
+  def infix_getS[T:Manifest](v: Rep[ReactiveSignal[T]]) = signalGetContent(v)
+  def signalGetContent[T:Manifest](v: Rep[ReactiveSignal[T]]): Rep[T]
 }
 
-trait ReactiveSignalsExp extends ReactiveSignals with EffectExp {
+trait ReactiveSignalsExp extends ReactiveSignals with EffectExp with FunctionBlocksExp {
+
+  case class SignalCreation[+T:Manifest](ds: Rep[Seq[DepHolder]], f: Rep[T]) extends Def[ReactiveSignal[T]]
+  def signalNew[T:Manifest](ds: Rep[Seq[DepHolder]], f: Rep[T]) = SignalCreation[T](ds,f)
+
+  case class SignalGetContent[+T:Manifest](v: Rep[ReactiveSignal[T]]) extends Def[T]
+  def signalGetContent[T:Manifest](v: Rep[ReactiveSignal[T]]) =
+    reflectEffect(SignalGetContent(v))
 }
 
 trait ScalaGenReactiveOps extends ScalaGenBase {
@@ -54,7 +65,12 @@ trait ScalaGenReactiveOps extends ScalaGenBase {
       emitValDef(sym, quote(v) + ".get")
     case VarSetContent(v,x) =>
       emitValDef(sym, quote(v) + ".set(" + quote(x) + ")")
+    case SignalCreation(x,f) =>
+      emitValDef(sym, "ReactiveSignal(" + quote(x) + ":_* ) { " + quote(f) + " }")
+    case SignalGetContent(v) =>
+      emitValDef(sym, quote(v) + ".get")
     case _ =>
       super.emitNode(sym,rhs)
   }
+
 }
