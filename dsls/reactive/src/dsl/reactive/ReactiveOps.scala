@@ -1,10 +1,14 @@
 package dsl.reactive
 
+import scala.virtualization.lms.common.FunctionBlocksExp
 import dsl.reactive.datastruct.scala._
 import scala.virtualization.lms.common.ScalaGenBase
 import scala.virtualization.lms.common.{ScalaGenEffect, Base, EffectExp}
+//import dsl.reactive.Types._
 
-trait ReactiveOps extends Base {
+trait ReactiveOps extends ReactiveVars
+
+trait ReactiveVars extends Base {
   def ReactiveVar[T:Manifest](x: Rep[T]): Rep[ReactiveVar[T]] = varNew(x)
   def varNew[T:Manifest](x: Rep[T]): Rep[ReactiveVar[T]]
 
@@ -18,7 +22,9 @@ trait ReactiveOps extends Base {
   def varModifyContent[T:Manifest](v: Rep[ReactiveVar[T]], f: Rep[T] => Rep[T]): Rep[ReactiveVar[T]]
 }
 
-trait ReactiveOpsExp extends ReactiveOps with EffectExp {
+trait ReactiveOpsExp extends ReactiveVarsExp
+
+trait ReactiveVarsExp extends ReactiveVars with EffectExp {
   case class VarCreation[T:Manifest](x: Rep[T]) extends Def[ReactiveVar[T]]
   def varNew[T:Manifest](x: Rep[T]) = VarCreation[T](x)
 
