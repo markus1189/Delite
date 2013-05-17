@@ -55,15 +55,15 @@ object ReactiveVar {
   def apply[T](initialValue: T) = new ReactiveVar(initialValue)
 }
 
-class ReactiveSignal[+T] private (depHolders: Seq[DepHolder])(expr: => T)
+class ReactiveSignal[+T] private (depHolders: Seq[DepHolder])(expr: Unit => T)
   extends Dependent with AccessableDepHolder[T] {
 
   private[this] var heldValue = expr
 
-  def get: T = heldValue
+  def get: T = heldValue()
 
   depHolders foreach addDependOn
-  depHolders foreach (_.addDependent(this)) // check
+  depHolders foreach (_.addDependent(this))
 
   private def reEvaluate() {
     val evaluated = expr
@@ -78,7 +78,7 @@ class ReactiveSignal[+T] private (depHolders: Seq[DepHolder])(expr: => T)
 }
 
 object ReactiveSignal {
-  def apply[T](depHolders: DepHolder*)(expr: => T) =
+  def apply[T](depHolders: DepHolder*)(expr: Unit => T) =
     new ReactiveSignal(depHolders)(expr)
 }
 

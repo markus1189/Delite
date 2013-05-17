@@ -34,18 +34,18 @@ trait ReactiveVarsExp extends ReactiveVars with EffectExp {
   def varModifyContent[T:Manifest](v: Rep[ReactiveVar[T]], f: Rep[T] => Rep[T]) = VarModifyContent(v,f)
 }
 
-trait ReactiveSignals extends Base {
-  def ReactiveSignal[T:Manifest](ds: Rep[Seq[DepHolder]])(f: Rep[T]): Rep[ReactiveSignal[T]] = signalNew(ds,f)
-  def signalNew[T:Manifest](ds: Rep[Seq[DepHolder]], f: Rep[T]): Rep[ReactiveSignal[T]]
+trait ReactiveSignals extends Base with Functions with TupledFunctions {
+  def ReactiveSignal[T:Manifest](ds: Rep[Seq[DepHolder]])(f: () => Rep[T]): Rep[ReactiveSignal[T]] = signalNew(ds,fun(f))
+  def signalNew[T:Manifest](ds: Rep[Seq[DepHolder]], f: Rep[Unit => T]): Rep[ReactiveSignal[T]]
 
   def infix_getS[T:Manifest](v: Rep[ReactiveSignal[T]]) = signalGetContent(v)
   def signalGetContent[T:Manifest](v: Rep[ReactiveSignal[T]]): Rep[T]
 }
 
-trait ReactiveSignalsExp extends ReactiveSignals with EffectExp with FunctionBlocksExp {
+trait ReactiveSignalsExp extends ReactiveSignals with EffectExp with FunctionsExp {
 
-  case class SignalCreation[T:Manifest](ds: Rep[Seq[DepHolder]], f: Rep[T]) extends Def[ReactiveSignal[T]] { val m = manifest[T] }
-  def signalNew[T:Manifest](ds: Rep[Seq[DepHolder]], f: Rep[T]) = SignalCreation[T](ds,f)
+  case class SignalCreation[T:Manifest](ds: Rep[Seq[DepHolder]], f: Rep[Unit => T]) extends Def[ReactiveSignal[T]] { val m = manifest[T] }
+  def signalNew[T:Manifest](ds: Rep[Seq[DepHolder]], f: Rep[Unit => T]) = SignalCreation[T](ds,f)
 
   case class SignalGetContent[+T:Manifest](v: Rep[ReactiveSignal[T]]) extends Def[T]
   def signalGetContent[T:Manifest](v: Rep[ReactiveSignal[T]]) =
