@@ -31,7 +31,7 @@ trait Reactivity extends Base {
 trait ReactivityExp extends Reactivity with EffectExp {
   case class AccessDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]]) extends Def[A]
   override def dep_holder_access[A:Manifest](dh: Exp[AccessableDepHolder[A]]): Exp[A] =
-    AccessDepHolder(dh)
+    reflectMutable(AccessDepHolder(dh))
 
   case class SetDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]) extends Def[Unit]
   override def dep_holder_set[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]): Exp[Unit] =
