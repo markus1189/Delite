@@ -1,16 +1,27 @@
 package dsl.reactive
 
+import scala.virtualization.lms.internal.GraphVizExport
+
 object HelloReactiveRunner extends ReactiveApplicationRunner with HelloReactive
 
 trait HelloReactive extends ReactiveApplication { 
   def main() = {
-    val x = ReactiveVar(5)
-    println(x.get)
-    x.set(42)
-    println(x.get)
-    x.set(1337)
-    println(x.get)
-    val y = ReactiveSignal(Seq(x)){ () => x.get + x.get }
-    println(y.getS)
+    val x = Var(5)
+    val y = Var(7)
+    val z = Var(10)
+    val sum = Signal(x,y,z) { x.get + y.get + z.get }
+    val product = Signal(x,y,z) { x.get * y.get * z.get }
+
+    val sumAndProduct = Signal(sum,product) { "Sum is: " + sum.get + "; Product is: " + product.get }
+
+    println("Sum is: " + sum.get)
+    println(sumAndProduct.get)
+
+    x.set(10)
+    y.set(2)
+    z.set(3)
+
+    println("Sum is: " + sum.get)
+    println(sumAndProduct.get)
   }
 }

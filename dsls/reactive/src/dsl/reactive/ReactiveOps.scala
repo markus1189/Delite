@@ -3,72 +3,72 @@ package dsl.reactive
 import dsl.reactive.datastruct.scala._
 import scala.virtualization.lms.common._
 
-trait ReactiveOps extends ReactiveVars with ReactiveSignals
-trait ReactiveOpsExp extends ReactiveVarsExp with ReactiveSignalsExp
+trait Reactivity extends Base {
+  implicit def toAccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) = new AccessableDepHolderOps(dh)
 
-trait ReactiveVars extends Base {
-  def ReactiveVar[T:Manifest](x: Rep[T]): Rep[ReactiveVar[T]] = varNew(x)
-  def varNew[T:Manifest](x: Rep[T]): Rep[ReactiveVar[T]]
-
-  def infix_get[T:Manifest](v: Rep[ReactiveVar[T]]) = varGetContent(v)
-  def varGetContent[T:Manifest](v: Rep[ReactiveVar[T]]): Rep[T]
-
-  def infix_set[T:Manifest](v: Rep[ReactiveVar[T]], x: Rep[T]) = varSetContent(v,x)
-  def varSetContent[T:Manifest](v: Rep[ReactiveVar[T]], x: Rep[T]): Rep[Unit]
-
-  def infix_modify[T:Manifest](v: Rep[ReactiveVar[T]], f: Rep[T] => Rep[T]) = varModifyContent(v,f)
-  def varModifyContent[T:Manifest](v: Rep[ReactiveVar[T]], f: Rep[T] => Rep[T]): Rep[ReactiveVar[T]]
-}
-
-trait ReactiveVarsExp extends ReactiveVars with EffectExp {
-  case class VarCreation[T:Manifest](x: Rep[T]) extends Def[ReactiveVar[T]] { val m = manifest[T] }
-  def varNew[T:Manifest](x: Rep[T]) = VarCreation[T](x)
-
-  case class VarGetContent[T:Manifest](v: Rep[ReactiveVar[T]]) extends Def[T]
-  def varGetContent[T:Manifest](v: Rep[ReactiveVar[T]]) = reflectEffect(VarGetContent(v))
-
-  case class VarSetContent[T:Manifest](v: Rep[ReactiveVar[T]], x: Rep[T]) extends Def[Unit]
-  def varSetContent[T:Manifest](v: Rep[ReactiveVar[T]], x: Rep[T]) = reflectEffect(VarSetContent(v,x))
-
-  case class VarModifyContent[T:Manifest](v: Rep[ReactiveVar[T]], f: Rep[T] => Rep[T]) extends Def[ReactiveVar[T]]
-  def varModifyContent[T:Manifest](v: Rep[ReactiveVar[T]], f: Rep[T] => Rep[T]) = VarModifyContent(v,f)
-}
-
-trait ReactiveSignals extends Base with Functions with TupledFunctions {
-  def ReactiveSignal[T:Manifest](ds: Rep[Seq[DepHolder]])(f: () => Rep[T]): Rep[ReactiveSignal[T]] = signalNew(ds,fun(f))
-  def signalNew[T:Manifest](ds: Rep[Seq[DepHolder]], f: Rep[Unit => T]): Rep[ReactiveSignal[T]]
-
-  def infix_getS[T:Manifest](v: Rep[ReactiveSignal[T]]) = signalGetContent(v)
-  def signalGetContent[T:Manifest](v: Rep[ReactiveSignal[T]]): Rep[T]
-}
-
-trait ReactiveSignalsExp extends ReactiveSignals with EffectExp with FunctionsExp {
-
-  case class SignalCreation[T:Manifest](ds: Rep[Seq[DepHolder]], f: Rep[Unit => T]) extends Def[ReactiveSignal[T]] { val m = manifest[T] }
-  def signalNew[T:Manifest](ds: Rep[Seq[DepHolder]], f: Rep[Unit => T]) = SignalCreation[T](ds,f)
-
-  case class SignalGetContent[+T:Manifest](v: Rep[ReactiveSignal[T]]) extends Def[T]
-  def signalGetContent[T:Manifest](v: Rep[ReactiveSignal[T]]) =
-    reflectEffect(SignalGetContent(v))
-}
-
-trait ScalaGenReactiveOps extends ScalaGenBase {
-  val IR: ReactiveOpsExp
-  import IR._
-
-  override def emitNode(sym: Sym[Any], rhs: Def[Any]) = rhs match {
-    case v@VarCreation(x) =>
-      emitValDef(sym, remap("generated.scala.ReactiveVar[" + remap(v.m) + "]") + "(" + quote(x) + ")")
-    case VarGetContent(v) =>
-      emitValDef(sym, quote(v) + ".get")
-    case VarSetContent(v,x) =>
-      emitValDef(sym, quote(v) + ".set(" + quote(x) + ")")
-    case s@SignalCreation(x,f) =>
-      emitValDef(sym, remap("generated.scala.ReactiveSignal[" + remap(s.m) + "]") + "(" + quote(x) + ":_* ) { " + quote(f) + " }")
-    case SignalGetContent(v) =>
-      emitValDef(sym, quote(v) + ".get")
-    case _ =>
-      super.emitNode(sym,rhs)
+  class AccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) {
+    def get: Rep[A] = dep_holder_access(dh)
+    def set[A:Manifest](value: Rep[A]): Rep[Unit] = dep_holder_set(dh, value)
   }
 
+  def dep_holder_access[A:Manifest](dh: Rep[AccessableDepHolder[A]]): Rep[A]
+  def dep_holder_set[A:Manifest](dh: Rep[AccessableDepHolder[A]], value: Rep[A]): Rep[Unit]
+
+  object Var {
+    def apply[A:Manifest](v: Rep[A]): Rep[AccessableDepHolder[A]] = new_reactive_var(v)
+  }
+
+  def new_reactive_var[A:Manifest](v: Rep[A]): Rep[Var[A]]
+
+  object Signal {
+    def apply[A:Manifest](dhs: Rep[DepHolder]*)(f: => Rep[A]) =
+      new_reactive_signal(dhs, f)
+  }
+
+  def new_reactive_signal[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Signal[A]]
+}
+
+trait ReactivityExp extends Reactivity with EffectExp {
+  case class AccessDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]]) extends Def[A]
+  override def dep_holder_access[A:Manifest](dh: Exp[AccessableDepHolder[A]]): Exp[A] =
+    AccessDepHolder(dh)
+
+  case class SetDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]) extends Def[Unit]
+  override def dep_holder_set[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]): Exp[Unit] =
+    reflectEffect(SetDepHolder(dh,value))
+
+  case class VarCreation[A:Manifest](value: Exp[A]) extends Def[Var[A]]
+  override def new_reactive_var[A:Manifest](v: Exp[A]): Exp[Var[A]] = reflectMutable(VarCreation(v))
+
+  case class SignalCreation[A:Manifest](
+    dhs: Seq[Exp[DepHolder]],
+    body: Block[A]
+  ) extends Def[Signal[A]] 
+
+  override def new_reactive_signal[A:Manifest](
+    dhs: Seq[Exp[DepHolder]],
+    f: => Exp[A]
+  ): Exp[Signal[A]] = reflectMutable(SignalCreation(dhs, reifyEffects(f)))
+
+  override def boundSyms(e: Any): List[Sym[Any]] = e match {
+    case SignalCreation(dhs,body) => effectSyms(body)
+    case _ => super.boundSyms(e)
+  }
+}
+
+trait ScalaGenReactivity extends ScalaGenBase with ScalaGenEffect {
+  val IR: ReactivityExp
+  import IR._
+
+  override def emitNode(sym: Sym[Any], node: Def[Any]): Unit = node match {
+    case AccessDepHolder(dh) => emitValDef(sym, quote(dh) + ".get")
+    case SetDepHolder(dh,value) => emitValDef(sym, quote(dh) + ".set(" + quote(value) + ")")
+    case VarCreation(v) => 
+      emitValDef(sym, "Var(" + quote(v) + ")")
+    case SignalCreation(dhs,f) =>
+      emitValDef(sym, "Signal(" + dhs.map(quote).mkString(", ") + ") { ")
+      emitBlock(f)
+      stream.println(quote(getBlockResult(f)) + "\n}")
+    case _ => super.emitNode(sym,node)
+  }
 }

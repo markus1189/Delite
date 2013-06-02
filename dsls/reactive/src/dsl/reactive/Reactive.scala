@@ -23,9 +23,9 @@ trait ReactiveLift extends LiftScala {
 }
 
 /* IR packages */
-trait Reactive extends ScalaOpsPkg with ReactiveOps
+trait Reactive extends ScalaOpsPkg with Reactivity
 
-trait ReactiveExp extends Reactive with ScalaOpsPkgExp with ReactiveOpsExp
+trait ReactiveExp extends Reactive with ScalaOpsPkgExp with ReactivityExp
   with DeliteOpsExp with VariantsOpsExp with DeliteAllOverridesExp {
 
   this: DeliteApplication with ReactiveApplication with ReactiveExp =>
@@ -64,7 +64,7 @@ trait ReactiveCodeGenBase extends GenericFatCodegen with codegen.Utils {
 }
 
 trait ReactiveCodeGenScala extends ReactiveCodeGenBase with ScalaCodeGenPkg 
-  with ScalaGenDeliteOps with ScalaGenReactiveOps 
+  with ScalaGenDeliteOps with ScalaGenReactivity 
   with ScalaGenVariantsOps with ScalaGenDeliteCollectionOps 
   with DeliteScalaGenAllOverrides {
       

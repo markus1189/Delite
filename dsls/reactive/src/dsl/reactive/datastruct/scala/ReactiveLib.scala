@@ -5,7 +5,7 @@ import scala.collection.mutable.ListBuffer
 
 /* A node that has nodes that depend on it */
 trait DepHolder {
-  private val dependents: Buffer[Dependent] = ListBuffer()
+  val dependents: Buffer[Dependent] = ListBuffer()
 
   def addDependent(dep: Dependent) { dependents += dep }
   def <+ : Dependent => Unit = addDependent _
@@ -36,7 +36,7 @@ object Dependent {
   implicit def fromExpression[T](exp: => T): Handler[T] = Handler(exp)
 }
 
-class ReactiveVar[T] private (initialValue: T) extends AccessableDepHolder[T] {
+class Var[T] private (initialValue: T) extends AccessableDepHolder[T] {
   private var heldValue: T = initialValue
 
   def get = heldValue
@@ -51,21 +51,21 @@ class ReactiveVar[T] private (initialValue: T) extends AccessableDepHolder[T] {
   def modify(f: T => T) = set(f(get))
 }
 
-object ReactiveVar {
-  def apply[T](initialValue: T) = new ReactiveVar(initialValue)
+object Var {
+  def apply[T](initialValue: T) = new Var(initialValue)
 }
 
-class ReactiveSignal[+T] private (depHolders: Seq[DepHolder])(expr: Unit => T)
+class Signal[+T] private (depHolders: Seq[DepHolder])(expr: => T)
   extends Dependent with AccessableDepHolder[T] {
 
   private[this] var heldValue = expr
 
-  def get: T = heldValue()
+  def get: T = heldValue
 
   depHolders foreach addDependOn
-  depHolders foreach (_.addDependent(this))
+  depHolders foreach (_.addDependent(this)) // check
 
-  private def reEvaluate() {
+  def reEvaluate() {
     val evaluated = expr
 
     if (evaluated != heldValue) {
@@ -77,9 +77,9 @@ class ReactiveSignal[+T] private (depHolders: Seq[DepHolder])(expr: Unit => T)
   def dependsOnChanged(dep: DepHolder) { reEvaluate() }
 }
 
-object ReactiveSignal {
-  def apply[T](depHolders: DepHolder*)(expr: Unit => T) =
-    new ReactiveSignal(depHolders)(expr)
+object Signal {
+  def apply[T](depHolders: DepHolder*)(expr: => T) =
+    new Signal(depHolders)(expr)
 }
 
 /**
@@ -92,3 +92,4 @@ class Handler[T] private (exp: => T) extends Dependent {
 object Handler{
 	def apply[T] (exp: => T) = new Handler(exp)
 }
+
