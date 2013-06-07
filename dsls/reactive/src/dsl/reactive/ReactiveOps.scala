@@ -38,7 +38,7 @@ trait ReactivityExp extends Reactivity with EffectExp {
     reflectEffect(SetDepHolder(dh,value))
 
   case class VarCreation[A:Manifest](value: Exp[A]) extends Def[Var[A]]
-  override def new_reactive_var[A:Manifest](v: Exp[A]): Exp[Var[A]] = reflectMutable(VarCreation(v))
+  override def new_reactive_var[A:Manifest](v: Exp[A]): Exp[Var[A]] = VarCreation(v)
 
   case class SignalCreation[A:Manifest](
     dhs: Seq[Exp[DepHolder]],
