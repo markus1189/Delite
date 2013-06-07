@@ -46,14 +46,16 @@ trait ReactivityExp extends Reactivity with EffectExp {
   override def dep_holder_set[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]): Exp[Unit] =
     reflectEffect(SetDepHolder(dh,value))
 
-  case class VarCreation[A:Manifest](value: Exp[A]) extends Def[Var[A]]
-  override def new_reactive_var[A:Manifest](v: Exp[A]): Exp[Var[A]] = VarCreation(v)
   case class GetDependents(dh: Exp[AccessableDepHolder[_]]) extends Def[Array[Dependent]]
   override def dep_holder_dependents(dh: Exp[AccessableDepHolder[_]]): Exp[Array[Dependent]] =
     GetDependents(dh)
 
   case class ReEvaluation(d: Exp[Dependent]) extends Def[Unit]
   override def dependent_re_evaluate(d: Exp[Dependent]): Exp[Unit] = ReEvaluation(d)
+
+  type MyVar[A] = dsl.reactive.datastruct.scala.Var[A]
+  case class VarCreation[A:Manifest](value: Exp[A]) extends Def[MyVar[A]]
+  override def new_reactive_var[A:Manifest](v: Exp[A]): Exp[MyVar[A]] = VarCreation(v)
 
   case class SignalCreation[A:Manifest](
     dhs: Seq[Exp[DepHolder]],
