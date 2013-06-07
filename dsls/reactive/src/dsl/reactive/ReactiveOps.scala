@@ -48,7 +48,7 @@ trait ReactivityExp extends Reactivity with EffectExp {
   override def new_reactive_signal[A:Manifest](
     dhs: Seq[Exp[DepHolder]],
     f: => Exp[A]
-  ): Exp[Signal[A]] = reflectMutable(SignalCreation(dhs, reifyEffects(f)))
+  ): Exp[Signal[A]] = SignalCreation(dhs, reifyEffects(f))
 
   override def boundSyms(e: Any): List[Sym[Any]] = e match {
     case SignalCreation(dhs,body) => effectSyms(body)
