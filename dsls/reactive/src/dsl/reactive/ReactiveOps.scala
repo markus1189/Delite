@@ -9,10 +9,12 @@ trait Reactivity extends Base {
   class AccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) {
     def get: Rep[A] = dep_holder_access(dh)
     def set[A:Manifest](value: Rep[A]): Rep[Unit] = dep_holder_set(dh, value)
+    def getDependents: Rep[Array[Dependent]] = dep_holder_dependents(dh)
   }
 
   def dep_holder_access[A:Manifest](dh: Rep[AccessableDepHolder[A]]): Rep[A]
   def dep_holder_set[A:Manifest](dh: Rep[AccessableDepHolder[A]], value: Rep[A]): Rep[Unit]
+  def dep_holder_dependents(dh: Rep[AccessableDepHolder[_]]): Rep[Array[Dependent]]
 
   object Var {
     def apply[A:Manifest](v: Rep[A]): Rep[AccessableDepHolder[A]] = new_reactive_var(v)
@@ -39,6 +41,9 @@ trait ReactivityExp extends Reactivity with EffectExp {
 
   case class VarCreation[A:Manifest](value: Exp[A]) extends Def[Var[A]]
   override def new_reactive_var[A:Manifest](v: Exp[A]): Exp[Var[A]] = VarCreation(v)
+  case class GetDependents(dh: Exp[AccessableDepHolder[_]]) extends Def[Array[Dependent]]
+  override def dep_holder_dependents(dh: Exp[AccessableDepHolder[_]]): Exp[Array[Dependent]] =
+    GetDependents(dh)
 
   case class SignalCreation[A:Manifest](
     dhs: Seq[Exp[DepHolder]],
@@ -62,6 +67,7 @@ trait ScalaGenReactivity extends ScalaGenBase with ScalaGenEffect {
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit = node match {
     case AccessDepHolder(dh) => emitValDef(sym, quote(dh) + ".get")
+    case GetDependents(dh) => emitValDef(sym, quote(dh) + ".getDependents")
     case SetDepHolder(dh,value) => emitValDef(sym, quote(dh) + ".set(" + quote(value) + ")")
     case VarCreation(v) => 
       emitValDef(sym, "Var(" + quote(v) + ")")
