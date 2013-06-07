@@ -16,6 +16,13 @@ trait Reactivity extends Base {
   def dep_holder_set[A:Manifest](dh: Rep[AccessableDepHolder[A]], value: Rep[A]): Rep[Unit]
   def dep_holder_dependents(dh: Rep[AccessableDepHolder[_]]): Rep[Array[Dependent]]
 
+  implicit def toDependentOps(d: Rep[Dependent]) = new DependentOps(d)
+  class DependentOps(d: Rep[Dependent]) {
+    def reEvaluate() = dependent_re_evaluate(d)
+  }
+
+  def dependent_re_evaluate(d: Rep[Dependent]): Rep[Unit]
+
   object Var {
     def apply[A:Manifest](v: Rep[A]): Rep[AccessableDepHolder[A]] = new_reactive_var(v)
   }
@@ -45,6 +52,9 @@ trait ReactivityExp extends Reactivity with EffectExp {
   override def dep_holder_dependents(dh: Exp[AccessableDepHolder[_]]): Exp[Array[Dependent]] =
     GetDependents(dh)
 
+  case class ReEvaluation(d: Exp[Dependent]) extends Def[Unit]
+  override def dependent_re_evaluate(d: Exp[Dependent]): Exp[Unit] = ReEvaluation(d)
+
   case class SignalCreation[A:Manifest](
     dhs: Seq[Exp[DepHolder]],
     body: Block[A]
@@ -67,6 +77,7 @@ trait ScalaGenReactivity extends ScalaGenBase with ScalaGenEffect {
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit = node match {
     case AccessDepHolder(dh) => emitValDef(sym, quote(dh) + ".get")
+    case ReEvaluation(d) => emitValDef(sym, quote(d) + ".reEvaluate()")
     case GetDependents(dh) => emitValDef(sym, quote(dh) + ".getDependents")
     case SetDepHolder(dh,value) => emitValDef(sym, quote(dh) + ".set(" + quote(value) + ")")
     case VarCreation(v) => 
