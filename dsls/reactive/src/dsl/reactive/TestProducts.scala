@@ -43,7 +43,17 @@ trait TestProducts extends ReactiveApplication {
     println(prod.get)
     println(System.currentTimeMillis)
 
-    x9.set(0)
+    x0.set(util.Random.nextInt)
+    x1.set(util.Random.nextInt)
+    x2.set(util.Random.nextInt)
+    x3.set(util.Random.nextInt)
+    x4.set(util.Random.nextInt)
+    x5.set(util.Random.nextInt)
+    x6.set(util.Random.nextInt)
+    x7.set(util.Random.nextInt)
+    x8.set(util.Random.nextInt)
+    x9.set(util.Random.nextInt)
+
     println(prod.get)
     println(System.currentTimeMillis)
   }
