@@ -4,6 +4,7 @@ import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 
 case class DependentSeq(ds: Seq[Dependent]) {
+  def size = ds.size
   def dcSize = ds.size
   def dcApply(i: Int) = ds(i)
   def dcUpdate(i: Int, n: Dependent) = ???

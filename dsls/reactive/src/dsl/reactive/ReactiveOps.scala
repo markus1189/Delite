@@ -1,6 +1,8 @@
 package dsl.reactive
 
 import scala.virtualization.lms.common._
+import ppl.delite.framework.ops.{DeliteCollectionOpsExp,DeliteOpsExp}
+import ppl.delite.framework.datastruct.scala.DeliteCollection
 
 trait Reactivity extends Base {
   implicit def toAccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) = new AccessableDepHolderOps(dh)
@@ -11,7 +13,7 @@ trait Reactivity extends Base {
     def getDependents: Rep[DependentSeq] = dep_holder_dependents(dh)
   }
 
-  implicit def toDepHolderOps[A:Manifest](dh: Rep[DepHolder]) = new DepHolderOps(dh)
+  implicit def toDepHolderOps(dh: Rep[DepHolder]) = new DepHolderOps(dh)
   class DepHolderOps(dh: Rep[DepHolder]) {
     def getDependents: Rep[DependentSeq] = dep_holder_dependents(dh)
   }
@@ -22,10 +24,10 @@ trait Reactivity extends Base {
 
   implicit def toDependentOps(d: Rep[Dependent]) = new DependentOps(d)
   class DependentOps(d: Rep[Dependent]) {
-    def reEvaluate() = dependent_re_evaluate(d)
+    def reEvaluate(dh: Rep[DepHolder]) = dependent_re_evaluate(dh, d)
   }
 
-  def dependent_re_evaluate(d: Rep[Dependent]): Rep[Unit]
+  def dependent_re_evaluate(dh: Rep[DepHolder], d: Rep[Dependent]): Rep[Unit]
 
   object Var {
     def apply[A:Manifest](v: Rep[A]): Rep[AccessableDepHolder[A]] = new_reactive_var(v)
@@ -41,21 +43,35 @@ trait Reactivity extends Base {
   def new_reactive_signal[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Signal[A]]
 }
 
-trait ReactivityExp extends Reactivity with EffectExp {
+trait ReactivityExp extends Reactivity with EffectExp with DeliteCollectionOpsExp with DeliteOpsExp {
+
   case class AccessDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]]) extends Def[A]
   override def dep_holder_access[A:Manifest](dh: Exp[AccessableDepHolder[A]]): Exp[A] =
     reflectMutable(AccessDepHolder(dh))
 
   case class SetDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]) extends Def[Unit]
-  override def dep_holder_set[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]): Exp[Unit] =
+
+  case class NotifyDependents(dh: Exp[DepHolder]) extends DeliteOpForeach[Dependent] {
+    def func: Exp[Dependent] => Exp[Unit] = _.reEvaluate(dh)
+    val in: Exp[DeliteCollection[Dependent]] = dh.getDependents
+    val size: Exp[Int] = dh.getDependents.size
+    def sync: Exp[Int] => Exp[List[Any]] = _ => unit(List[Any]())
+  }
+
+  case class GetSizeDependentSeq(dseq: Exp[DependentSeq]) extends Def[Int]
+  def infix_size(dseq: Exp[DependentSeq]) = GetSizeDependentSeq(dseq)
+
+  override def dep_holder_set[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]): Exp[Unit] = {
     reflectEffect(SetDepHolder(dh,value))
+    reflectEffect(NotifyDependents(dh))
+  }
 
   case class GetDependents(dh: Exp[DepHolder]) extends Def[DependentSeq]
   override def dep_holder_dependents(dh: Exp[DepHolder]): Exp[DependentSeq] =
     GetDependents(dh)
 
-  case class ReEvaluation(d: Exp[Dependent]) extends Def[Unit]
-  override def dependent_re_evaluate(d: Exp[Dependent]): Exp[Unit] = ReEvaluation(d)
+  case class ReEvaluation(dh: Exp[DepHolder], d: Exp[Dependent]) extends Def[Unit]
+  override def dependent_re_evaluate(dh: Exp[DepHolder], d: Exp[Dependent]): Exp[Unit] = ReEvaluation(dh,d)
 
   type MyVar[A] = dsl.reactive.Var[A]
   case class VarCreation[A:Manifest](value: Exp[A]) extends Def[MyVar[A]]
@@ -82,8 +98,9 @@ trait ScalaGenReactivity extends ScalaGenBase with ScalaGenEffect {
   import IR._
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit = node match {
+    case GetSizeDependentSeq(dseq) => emitValDef(sym, quote(dseq) + ".size")
     case AccessDepHolder(dh) => emitValDef(sym, quote(dh) + ".get")
-    case ReEvaluation(d) => emitValDef(sym, quote(d) + ".reEvaluate()")
+    case ReEvaluation(dh,d) => emitValDef(sym, quote(d) + ".dependsOnChanged(" + quote(dh) + ")")
     case GetDependents(dh) => emitValDef(sym, quote(dh) + ".getDependents")
     case SetDepHolder(dh,value) => emitValDef(sym, quote(dh) + ".set(" + quote(value) + ")")
     case VarCreation(v) =>
