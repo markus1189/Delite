@@ -1,11 +1,9 @@
 package dsl.reactive
 
-import dsl.reactive.datastruct.scala._
 import scala.virtualization.lms.common._
 
 trait Reactivity extends Base {
   implicit def toAccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) = new AccessableDepHolderOps(dh)
-  implicit def toDepHolderOps[A:Manifest](dh: Rep[DepHolder]) = new DepHolderOps(dh)
 
   class AccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) {
     def get: Rep[A] = dep_holder_access(dh)
@@ -13,10 +11,10 @@ trait Reactivity extends Base {
     def getDependents: Rep[Array[Dependent]] = dep_holder_dependents(dh)
   }
 
+  implicit def toDepHolderOps[A:Manifest](dh: Rep[DepHolder]) = new DepHolderOps(dh)
   class DepHolderOps(dh: Rep[DepHolder]) {
     def getDependents: Rep[Array[Dependent]] = dep_holder_dependents(dh)
   }
-
 
   def dep_holder_access[A:Manifest](dh: Rep[AccessableDepHolder[A]]): Rep[A]
   def dep_holder_set[A:Manifest](dh: Rep[AccessableDepHolder[A]], value: Rep[A]): Rep[Unit]
@@ -59,14 +57,14 @@ trait ReactivityExp extends Reactivity with EffectExp {
   case class ReEvaluation(d: Exp[Dependent]) extends Def[Unit]
   override def dependent_re_evaluate(d: Exp[Dependent]): Exp[Unit] = ReEvaluation(d)
 
-  type MyVar[A] = dsl.reactive.datastruct.scala.Var[A]
+  type MyVar[A] = dsl.reactive.Var[A]
   case class VarCreation[A:Manifest](value: Exp[A]) extends Def[MyVar[A]]
   override def new_reactive_var[A:Manifest](v: Exp[A]): Exp[MyVar[A]] = VarCreation(v)
 
   case class SignalCreation[A:Manifest](
     dhs: Seq[Exp[DepHolder]],
     body: Block[A]
-  ) extends Def[Signal[A]] 
+  ) extends Def[Signal[A]]
 
   override def new_reactive_signal[A:Manifest](
     dhs: Seq[Exp[DepHolder]],
@@ -88,7 +86,7 @@ trait ScalaGenReactivity extends ScalaGenBase with ScalaGenEffect {
     case ReEvaluation(d) => emitValDef(sym, quote(d) + ".reEvaluate()")
     case GetDependents(dh) => emitValDef(sym, quote(dh) + ".getDependents")
     case SetDepHolder(dh,value) => emitValDef(sym, quote(dh) + ".set(" + quote(value) + ")")
-    case VarCreation(v) => 
+    case VarCreation(v) =>
       emitValDef(sym, "Var(" + quote(v) + ")")
     case SignalCreation(dhs,f) =>
       emitValDef(sym, "Signal(" + dhs.map(quote).mkString(", ") + ") { ")

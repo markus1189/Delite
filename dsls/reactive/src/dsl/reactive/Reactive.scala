@@ -9,6 +9,12 @@ import codegen.delite.overrides._
 import codegen.scala.TargetScala
 import java.io.File
 
+trait DepHolder
+trait AccessableDepHolder[+A] extends DepHolder
+trait Dependent
+abstract class Var[A:Manifest] extends AccessableDepHolder[A]
+abstract class Signal[+A:Manifest] extends Dependent with AccessableDepHolder[A]
+
 trait ReactiveApplicationRunner extends ReactiveApplication 
                                 with DeliteApplication 
                                 with ReactiveExp
