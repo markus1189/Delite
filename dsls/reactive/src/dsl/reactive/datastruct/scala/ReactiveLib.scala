@@ -19,7 +19,7 @@ trait DepHolder {
 
   def removeDependent(dep: Dependent) { dependents -= dep }
 
-  def notifyDependents() { dependents foreach (_.dependsOnChanged(this)) }
+  def notifyDependents() { }
 
   def getDependents: DependentSeq = DependentSeq(dependents.toSeq)
 }
