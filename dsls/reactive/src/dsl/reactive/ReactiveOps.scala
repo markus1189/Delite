@@ -5,6 +5,7 @@ import scala.virtualization.lms.common._
 
 trait Reactivity extends Base {
   implicit def toAccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) = new AccessableDepHolderOps(dh)
+  implicit def toDepHolderOps[A:Manifest](dh: Rep[DepHolder]) = new DepHolderOps(dh)
 
   class AccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) {
     def get: Rep[A] = dep_holder_access(dh)
@@ -12,9 +13,14 @@ trait Reactivity extends Base {
     def getDependents: Rep[Array[Dependent]] = dep_holder_dependents(dh)
   }
 
+  class DepHolderOps(dh: Rep[DepHolder]) {
+    def getDependents: Rep[Array[Dependent]] = dep_holder_dependents(dh)
+  }
+
+
   def dep_holder_access[A:Manifest](dh: Rep[AccessableDepHolder[A]]): Rep[A]
   def dep_holder_set[A:Manifest](dh: Rep[AccessableDepHolder[A]], value: Rep[A]): Rep[Unit]
-  def dep_holder_dependents(dh: Rep[AccessableDepHolder[_]]): Rep[Array[Dependent]]
+  def dep_holder_dependents(dh: Rep[DepHolder]): Rep[Array[Dependent]]
 
   implicit def toDependentOps(d: Rep[Dependent]) = new DependentOps(d)
   class DependentOps(d: Rep[Dependent]) {
@@ -46,8 +52,8 @@ trait ReactivityExp extends Reactivity with EffectExp {
   override def dep_holder_set[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]): Exp[Unit] =
     reflectEffect(SetDepHolder(dh,value))
 
-  case class GetDependents(dh: Exp[AccessableDepHolder[_]]) extends Def[Array[Dependent]]
-  override def dep_holder_dependents(dh: Exp[AccessableDepHolder[_]]): Exp[Array[Dependent]] =
+  case class GetDependents(dh: Exp[DepHolder]) extends Def[Array[Dependent]]
+  override def dep_holder_dependents(dh: Exp[DepHolder]): Exp[Array[Dependent]] =
     GetDependents(dh)
 
   case class ReEvaluation(d: Exp[Dependent]) extends Def[Unit]
