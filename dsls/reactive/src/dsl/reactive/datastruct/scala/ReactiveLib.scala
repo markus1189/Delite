@@ -3,6 +3,12 @@ package dsl.reactive.datastruct.scala
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 
+case class DependentSeq(ds: Seq[Dependent]) {
+  def dcSize = ds.size
+  def dcApply(i: Int) = ds(i)
+  def dcUpdate(i: Int, n: Dependent) = ???
+}
+
 /* A node that has nodes that depend on it */
 trait DepHolder {
   val dependents: Buffer[Dependent] = ListBuffer()
@@ -13,6 +19,8 @@ trait DepHolder {
   def removeDependent(dep: Dependent) { dependents -= dep }
 
   def notifyDependents() { dependents foreach (_.dependsOnChanged(this)) }
+
+  def getDependents: DependentSeq = DependentSeq(dependents.toSeq)
 }
 
 trait AccessableDepHolder[+T] extends DepHolder {

@@ -14,6 +14,7 @@ trait AccessableDepHolder[+A] extends DepHolder
 trait Dependent
 abstract class Var[A:Manifest] extends AccessableDepHolder[A]
 abstract class Signal[+A:Manifest] extends Dependent with AccessableDepHolder[A]
+abstract class DependentSeq extends DeliteCollection[Dependent]
 
 trait ReactiveApplicationRunner extends ReactiveApplication 
                                 with DeliteApplication 
