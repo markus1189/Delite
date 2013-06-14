@@ -22,12 +22,11 @@ trait Reactivity extends Base {
   def dep_holder_set[A:Manifest](dh: Rep[AccessableDepHolder[A]], value: Rep[A]): Rep[Unit]
   def dep_holder_dependents(dh: Rep[DepHolder]): Rep[DependentSeq]
 
-  implicit def toDependentOps(d: Rep[Dependent]) = new DependentOps(d)
-  class DependentOps(d: Rep[Dependent]) {
-    def reEvaluate(dh: Rep[DepHolder]) = dependent_re_evaluate(dh, d)
+  implicit def toReEvalutatesOps(elem: Rep[ReEvaluates]) = new ReEvalutesOps(elem)
+  class ReEvalutesOps(elem: Rep[ReEvaluates]) {
+    def reEvaluate() = re_evaluate(elem)
   }
-
-  def dependent_re_evaluate(dh: Rep[DepHolder], d: Rep[Dependent]): Rep[Unit]
+  def re_evaluate(elem: Rep[ReEvaluates]): Rep[Unit]
 
   object Var {
     def apply[A:Manifest](v: Rep[A]): Rep[AccessableDepHolder[A]] = new_reactive_var(v)
@@ -52,7 +51,7 @@ trait ReactivityExp extends Reactivity with EffectExp with DeliteCollectionOpsEx
   case class SetDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]) extends Def[Unit]
 
   case class NotifyDependents(dh: Exp[DepHolder]) extends DeliteOpForeach[Dependent] {
-    def func: Exp[Dependent] => Exp[Unit] = _.reEvaluate(dh)
+    def func: Exp[Dependent] => Exp[Unit] = _.reEvaluate()
     val in: Exp[DeliteCollection[Dependent]] = dh.getDependents
     val size: Exp[Int] = dh.getDependents.size
     def sync: Exp[Int] => Exp[List[Any]] = _ => unit(List[Any]())
@@ -70,8 +69,8 @@ trait ReactivityExp extends Reactivity with EffectExp with DeliteCollectionOpsEx
   override def dep_holder_dependents(dh: Exp[DepHolder]): Exp[DependentSeq] =
     GetDependents(dh)
 
-  case class ReEvaluation(dh: Exp[DepHolder], d: Exp[Dependent]) extends Def[Unit]
-  override def dependent_re_evaluate(dh: Exp[DepHolder], d: Exp[Dependent]): Exp[Unit] = ReEvaluation(dh,d)
+  case class ReEvaluation(elem: Exp[ReEvaluates]) extends Def[Unit]
+  override def re_evaluate(elem: Exp[ReEvaluates]): Exp[Unit] = ReEvaluation(elem)
 
   type MyVar[A] = dsl.reactive.Var[A]
   case class VarCreation[A:Manifest](value: Exp[A]) extends Def[MyVar[A]]
@@ -100,7 +99,7 @@ trait ScalaGenReactivity extends ScalaGenBase with ScalaGenEffect {
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit = node match {
     case GetSizeDependentSeq(dseq) => emitValDef(sym, quote(dseq) + ".size")
     case AccessDepHolder(dh) => emitValDef(sym, quote(dh) + ".get")
-    case ReEvaluation(dh,d) => emitValDef(sym, quote(d) + ".dependsOnChanged(" + quote(dh) + ")")
+    case ReEvaluation(elem) => emitValDef(sym, quote(elem) + ".reEvaluate()")
     case GetDependents(dh) => emitValDef(sym, quote(dh) + ".getDependents")
     case SetDepHolder(dh,value) => emitValDef(sym, quote(dh) + ".set(" + quote(value) + ")")
     case VarCreation(v) =>
