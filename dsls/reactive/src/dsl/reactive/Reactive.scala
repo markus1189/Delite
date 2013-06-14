@@ -9,13 +9,14 @@ import codegen.delite.overrides._
 import codegen.scala.TargetScala
 import java.io.File
 
-trait ReEvaluates
-trait DepHolder extends ReEvaluates
+trait ReactiveEntity
+trait DepHolder extends ReactiveEntity
 trait AccessableDepHolder[+A] extends DepHolder
-trait Dependent extends ReEvaluates
+trait Dependent extends ReactiveEntity
+
 abstract class Var[A:Manifest] extends AccessableDepHolder[A]
 abstract class Signal[+A:Manifest] extends Dependent with AccessableDepHolder[A]
-abstract class DependentSeq extends DeliteCollection[Dependent]
+abstract class ReactiveEntitySeq extends DeliteCollection[ReactiveEntity]
 
 trait ReactiveApplicationRunner extends ReactiveApplication 
                                 with DeliteApplication 
