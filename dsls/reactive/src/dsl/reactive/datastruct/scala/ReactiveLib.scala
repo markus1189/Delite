@@ -3,19 +3,20 @@ package dsl.reactive.datastruct.scala
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 
-trait ReEvaluates {
-  def reEvaluate(): Unit
+trait ReactiveEntity {
+  def getDependents: ReactiveEntitySeq
+  def forceReEval(): Unit
 }
 
-case class DependentSeq(ds: Seq[Dependent]) {
-  def size = ds.size
-  def dcSize = ds.size
-  def dcApply(i: Int) = ds(i)
+case class ReactiveEntitySeq(re: Seq[ReactiveEntity]) {
+  def size = re.size
+  def dcSize = re.size
+  def dcApply(i: Int) = re(i)
   def dcUpdate(i: Int, n: Dependent) = ???
 }
 
 /* A node that has nodes that depend on it */
-trait DepHolder extends ReEvaluates {
+trait DepHolder extends ReactiveEntity {
   val dependents: Buffer[Dependent] = ListBuffer()
 
   def addDependent(dep: Dependent) { dependents += dep }
@@ -25,7 +26,7 @@ trait DepHolder extends ReEvaluates {
 
   def notifyDependents() { }
 
-  def getDependents: DependentSeq = DependentSeq(dependents.toSeq)
+  def getDependents: ReactiveEntitySeq = ReactiveEntitySeq(dependents.toSeq)
 }
 
 trait AccessableDepHolder[+T] extends DepHolder {
@@ -33,7 +34,7 @@ trait AccessableDepHolder[+T] extends DepHolder {
 }
 
 /* A node that depends on other nodes */
-trait Dependent extends ReEvaluates {
+trait Dependent extends ReactiveEntity {
   private val dependOn: Buffer[DepHolder] = new ListBuffer()
 
   def addDependOn(dep: DepHolder) { dependOn += dep }
@@ -63,7 +64,7 @@ class Var[T] private (initialValue: T) extends AccessableDepHolder[T] {
 
   def modify(f: T => T) = set(f(get))
 
-  def reEvaluate() { }
+  def forceReEval() { }
 }
 
 object Var {
@@ -89,6 +90,8 @@ class Signal[+T] private (depHolders: Seq[DepHolder])(expr: => T)
     }
   }
 
+  def forceReEval() = reEvaluate()
+
   def dependsOnChanged(dep: DepHolder) { reEvaluate() }
 }
 
@@ -103,6 +106,8 @@ object Signal {
 class Handler[T] private (exp: => T) extends Dependent {
   def dependsOnChanged(dep: DepHolder) = exp
   def reEvaluate = exp
+  def forceReEval() = exp
+  def getDependents = ReactiveEntitySeq(List.empty)
 }
 
 object Handler{
