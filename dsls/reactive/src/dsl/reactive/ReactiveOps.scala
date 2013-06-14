@@ -13,6 +13,15 @@ trait Reactivity extends Base {
     def getDependents: Rep[ReactiveEntitySeq] = dep_holder_dependents(dh)
   }
 
+  implicit def toReactiveEntityOps(entity: Rep[ReactiveEntity]) = new ReactiveEntityOps(entity)
+  class ReactiveEntityOps(entity: Rep[ReactiveEntity]) {
+    def getDependents: Rep[ReactiveEntitySeq] = reactive_entity_dependents(entity)
+    def reEvaluate() = re_evaluate(entity)
+  }
+
+  def reactive_entity_dependents(entity: Rep[ReactiveEntity]): Rep[ReactiveEntitySeq]
+  def re_evaluate(elem: Rep[ReactiveEntity]): Rep[Unit]
+
   implicit def toDepHolderOps(dh: Rep[DepHolder]) = new DepHolderOps(dh)
   class DepHolderOps(dh: Rep[DepHolder]) {
     def getDependents: Rep[ReactiveEntitySeq] = dep_holder_dependents(dh)
@@ -21,12 +30,6 @@ trait Reactivity extends Base {
   def dep_holder_access[A:Manifest](dh: Rep[AccessableDepHolder[A]]): Rep[A]
   def dep_holder_set[A:Manifest](dh: Rep[AccessableDepHolder[A]], value: Rep[A]): Rep[Unit]
   def dep_holder_dependents(dh: Rep[DepHolder]): Rep[ReactiveEntitySeq]
-
-  implicit def toReactiveEntityOps(elem: Rep[ReactiveEntity]) = new ReEvalutesOps(elem)
-  class ReEvalutesOps(elem: Rep[ReactiveEntity]) {
-    def reEvaluate() = re_evaluate(elem)
-  }
-  def re_evaluate(elem: Rep[ReactiveEntity]): Rep[Unit]
 
   object Var {
     def apply[A:Manifest](v: Rep[A]): Rep[AccessableDepHolder[A]] = new_reactive_var(v)
@@ -42,7 +45,11 @@ trait Reactivity extends Base {
   def new_reactive_signal[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Signal[A]]
 }
 
-trait ReactivityExp extends Reactivity with EffectExp with DeliteCollectionOpsExp with DeliteOpsExp {
+trait ReactivityExp extends Reactivity 
+                    with EffectExp 
+                    with DeliteCollectionOpsExp 
+                    with DeliteOpsExp 
+                    with ListOpsExp {
 
   case class AccessDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]]) extends Def[A]
   override def dep_holder_access[A:Manifest](dh: Exp[AccessableDepHolder[A]]): Exp[A] =
@@ -50,27 +57,36 @@ trait ReactivityExp extends Reactivity with EffectExp with DeliteCollectionOpsEx
 
   case class SetDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]) extends Def[Unit]
 
-  case class NotifyDependents(dh: Exp[DepHolder]) extends DeliteOpForeach[ReactiveEntity] {
+  case class NotifyDependents(dh: Exp[ReactiveEntity]) extends DeliteOpForeach[ReactiveEntity] {
     def func: Exp[ReactiveEntity] => Exp[Unit] = _.reEvaluate()
     val in: Exp[DeliteCollection[ReactiveEntity]] = dh.getDependents
     val size: Exp[Int] = dh.getDependents.size
-    def sync: Exp[Int] => Exp[List[Any]] = _ => unit(List[Any]())
+    def sync: Exp[Int] => Exp[List[Any]] = _ => List[Any]()
   }
 
-  case class GetSizeReactiveEntitySeq(dseq: Exp[ReactiveEntitySeq]) extends Def[Int]
-  def infix_size(dseq: Exp[ReactiveEntitySeq]) = GetSizeReactiveEntitySeq(dseq)
+  case class GetSizeReactiveEntitySeq(reSeq: Exp[ReactiveEntitySeq]) extends Def[Int]
+  case class UnwrapReactiveEntitySeq(reSeq: Exp[ReactiveEntitySeq]) extends Def[List[ReactiveEntity]]
+  def infix_size(reSeq: Exp[ReactiveEntitySeq]): Exp[Int] = GetSizeReactiveEntitySeq(reSeq)
+  def infix_unwrap(reSeq: Exp[ReactiveEntitySeq]): Exp[List[ReactiveEntity]] = UnwrapReactiveEntitySeq(reSeq)
 
   override def dep_holder_set[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]): Exp[Unit] = {
     reflectEffect(SetDepHolder(dh,value))
     reflectEffect(NotifyDependents(dh))
+    dh.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e)))
+    unit { {} }
   }
 
-  case class GetDependents(dh: Exp[DepHolder]) extends Def[ReactiveEntitySeq]
+  case class GetDependents(dh: Exp[ReactiveEntity]) extends Def[ReactiveEntitySeq]
   override def dep_holder_dependents(dh: Exp[DepHolder]): Exp[ReactiveEntitySeq] =
     GetDependents(dh)
 
+  override def reactive_entity_dependents(entity: Exp[ReactiveEntity]): Exp[ReactiveEntitySeq] =
+    GetDependents(entity)
+
   case class ReEvaluation(elem: Exp[ReactiveEntity]) extends Def[Unit]
-  override def re_evaluate(elem: Exp[ReactiveEntity]): Exp[Unit] = ReEvaluation(elem)
+  override def re_evaluate(elem: Exp[ReactiveEntity]): Exp[Unit] = {
+    reflectEffect(ReEvaluation(elem))
+  }
 
   type MyVar[A] = dsl.reactive.Var[A]
   case class VarCreation[A:Manifest](value: Exp[A]) extends Def[MyVar[A]]
@@ -97,7 +113,8 @@ trait ScalaGenReactivity extends ScalaGenBase with ScalaGenEffect {
   import IR._
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit = node match {
-    case GetSizeReactiveEntitySeq(dseq) => emitValDef(sym, quote(dseq) + ".size")
+    case GetSizeReactiveEntitySeq(reSeq) => emitValDef(sym, quote(reSeq) + ".size")
+    case UnwrapReactiveEntitySeq(reSeq) => emitValDef(sym, quote(reSeq) + ".re.toList")
     case AccessDepHolder(dh) => emitValDef(sym, quote(dh) + ".get")
     case ReEvaluation(elem) => emitValDef(sym, quote(elem) + ".forceReEval()")
     case GetDependents(dh) => emitValDef(sym, quote(dh) + ".getDependents")

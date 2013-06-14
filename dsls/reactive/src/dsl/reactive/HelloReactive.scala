@@ -13,9 +13,11 @@ trait HelloReactive extends ReactiveApplication {
     val product = Signal(x,y,z) { x.get * y.get * z.get }
 
     val sumAndProduct = Signal(sum,product) { "Sum is: " + sum.get + "; Product is: " + product.get }
+    val threeLevelSignal = Signal(sumAndProduct) { "Level three: " + sumAndProduct.get }
 
     println("Sum is: " + sum.get)
     println(sumAndProduct.get)
+    println(threeLevelSignal.get)
 
     x.set(10)
     y.set(2)
@@ -23,5 +25,6 @@ trait HelloReactive extends ReactiveApplication {
 
     println("Sum is: " + sum.get)
     println(sumAndProduct.get)
+    println(threeLevelSignal.get)
   }
 }
