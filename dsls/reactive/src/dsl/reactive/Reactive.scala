@@ -9,9 +9,10 @@ import codegen.delite.overrides._
 import codegen.scala.TargetScala
 import java.io.File
 
-trait DepHolder
+trait ReEvaluates
+trait DepHolder extends ReEvaluates
 trait AccessableDepHolder[+A] extends DepHolder
-trait Dependent
+trait Dependent extends ReEvaluates
 abstract class Var[A:Manifest] extends AccessableDepHolder[A]
 abstract class Signal[+A:Manifest] extends Dependent with AccessableDepHolder[A]
 abstract class DependentSeq extends DeliteCollection[Dependent]

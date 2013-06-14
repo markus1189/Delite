@@ -3,6 +3,10 @@ package dsl.reactive.datastruct.scala
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 
+trait ReEvaluates {
+  def reEvaluate(): Unit
+}
+
 case class DependentSeq(ds: Seq[Dependent]) {
   def size = ds.size
   def dcSize = ds.size
@@ -11,7 +15,7 @@ case class DependentSeq(ds: Seq[Dependent]) {
 }
 
 /* A node that has nodes that depend on it */
-trait DepHolder {
+trait DepHolder extends ReEvaluates {
   val dependents: Buffer[Dependent] = ListBuffer()
 
   def addDependent(dep: Dependent) { dependents += dep }
@@ -29,7 +33,7 @@ trait AccessableDepHolder[+T] extends DepHolder {
 }
 
 /* A node that depends on other nodes */
-trait Dependent extends {
+trait Dependent extends ReEvaluates {
   private val dependOn: Buffer[DepHolder] = new ListBuffer()
 
   def addDependOn(dep: DepHolder) { dependOn += dep }
@@ -58,6 +62,8 @@ class Var[T] private (initialValue: T) extends AccessableDepHolder[T] {
   }
 
   def modify(f: T => T) = set(f(get))
+
+  def reEvaluate() { }
 }
 
 object Var {
@@ -96,6 +102,7 @@ object Signal {
  */
 class Handler[T] private (exp: => T) extends Dependent {
   def dependsOnChanged(dep: DepHolder) = exp
+  def reEvaluate = exp
 }
 
 object Handler{
