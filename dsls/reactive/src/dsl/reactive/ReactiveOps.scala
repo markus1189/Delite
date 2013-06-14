@@ -46,16 +46,23 @@ trait Reactivity extends Base {
 }
 
 trait ReactivityExp extends Reactivity 
+                    with WhileExp
+                    with ListOpsExp
+                    with SeqOpsExp
                     with EffectExp 
                     with DeliteCollectionOpsExp 
                     with DeliteOpsExp 
-                    with ListOpsExp {
+                    with IfThenElseExp {
 
   case class AccessDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]]) extends Def[A]
   override def dep_holder_access[A:Manifest](dh: Exp[AccessableDepHolder[A]]): Exp[A] =
     reflectMutable(AccessDepHolder(dh))
 
-  case class SetDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]) extends Def[Unit]
+  case class GetSizeReactiveEntitySeq(reSeq: Exp[ReactiveEntitySeq]) extends Def[Int]
+  case class UnwrapReactiveEntitySeq(reSeq: Exp[ReactiveEntitySeq]) extends Def[List[ReactiveEntity]]
+  def infix_size(reSeq: Exp[ReactiveEntitySeq]): Exp[Int] = GetSizeReactiveEntitySeq(reSeq)
+  def infix_unwrap(reSeq: Exp[ReactiveEntitySeq]): Exp[List[ReactiveEntity]] = UnwrapReactiveEntitySeq(reSeq)
+
 
   case class NotifyDependents(dh: Exp[ReactiveEntity]) extends DeliteOpForeach[ReactiveEntity] {
     def func: Exp[ReactiveEntity] => Exp[Unit] = _.reEvaluate()
@@ -64,16 +71,23 @@ trait ReactivityExp extends Reactivity
     def sync: Exp[Int] => Exp[List[Any]] = _ => List[Any]()
   }
 
-  case class GetSizeReactiveEntitySeq(reSeq: Exp[ReactiveEntitySeq]) extends Def[Int]
-  case class UnwrapReactiveEntitySeq(reSeq: Exp[ReactiveEntitySeq]) extends Def[List[ReactiveEntity]]
-  def infix_size(reSeq: Exp[ReactiveEntitySeq]): Exp[Int] = GetSizeReactiveEntitySeq(reSeq)
-  def infix_unwrap(reSeq: Exp[ReactiveEntitySeq]): Exp[List[ReactiveEntity]] = UnwrapReactiveEntitySeq(reSeq)
-
+  case class SetDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]) extends Def[Unit]
   override def dep_holder_set[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]): Exp[Unit] = {
     reflectEffect(SetDepHolder(dh,value))
-    reflectEffect(NotifyDependents(dh))
-    dh.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e)))
-    unit { {} }
+    notify(dh)
+  }
+
+  def infix_flatten[A:Manifest,B:Manifest](l: Exp[List[A]]): Exp[List[B]] = ListFlatten[A,B](l)
+  case class ListFlatten[A:Manifest,B:Manifest](l: Exp[List[A]]) extends Def[List[B]]
+
+  private def notify(e: Exp[ReactiveEntity]) {
+    reflectEffect(NotifyDependents(e))
+    var deps: Exp[List[ReactiveEntity]] = e.getDependents.unwrap
+
+    while(deps.toSeq.length > unit(0)) {
+      deps.map(e => reflectEffect(NotifyDependents(e)))
+      deps = deps.map(e => e.getDependents).flatten
+    }
   }
 
   case class GetDependents(dh: Exp[ReactiveEntity]) extends Def[ReactiveEntitySeq]
@@ -108,7 +122,7 @@ trait ReactivityExp extends Reactivity
   }
 }
 
-trait ScalaGenReactivity extends ScalaGenBase with ScalaGenEffect {
+trait ScalaGenReactivity extends ScalaGenBase with ScalaGenEffect with ScalaGenWhile {
   val IR: ReactivityExp
   import IR._
 
