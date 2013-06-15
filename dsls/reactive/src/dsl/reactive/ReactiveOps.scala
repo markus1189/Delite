@@ -82,12 +82,19 @@ trait ReactivityExp extends Reactivity
 
   private def notify(e: Exp[ReactiveEntity]) {
     reflectEffect(NotifyDependents(e))
-    var deps: Exp[List[ReactiveEntity]] = e.getDependents.unwrap
+    e.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e)))
+    e.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e))))
+    e.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e)))))
+    e.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e))))))
+    e.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e)))))))
+    e.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e))))))))
+    e.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e)))))))))
+    //var deps: Exp[List[ReactiveEntity]] = e.getDependents.unwrap
 
-    while(deps.toSeq.length > unit(0)) {
-      deps.map(e => reflectEffect(NotifyDependents(e)))
-      deps = deps.map(e => e.getDependents).flatten
-    }
+    //while(deps.toSeq.length > unit(0)) {
+      //deps.map(e => reflectEffect(NotifyDependents(e)))
+      //deps = deps.map(e => e.getDependents).flatten
+    //}
   }
 
   case class GetDependents(dh: Exp[ReactiveEntity]) extends Def[ReactiveEntitySeq]
