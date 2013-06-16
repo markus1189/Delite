@@ -77,24 +77,9 @@ trait ReactivityExp extends Reactivity
     notify(dh)
   }
 
-  def infix_flatten[A:Manifest,B:Manifest](l: Exp[List[A]]): Exp[List[B]] = ListFlatten[A,B](l)
-  case class ListFlatten[A:Manifest,B:Manifest](l: Exp[List[A]]) extends Def[List[B]]
-
   private def notify(e: Exp[ReactiveEntity]) {
     reflectEffect(NotifyDependents(e))
-    e.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e)))
-    e.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e))))
-    e.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e)))))
-    e.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e))))))
-    e.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e)))))))
-    e.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e))))))))
-    e.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e)))))))))
-    //var deps: Exp[List[ReactiveEntity]] = e.getDependents.unwrap
-
-    //while(deps.toSeq.length > unit(0)) {
-      //deps.map(e => reflectEffect(NotifyDependents(e)))
-      //deps = deps.map(e => e.getDependents).flatten
-    //}
+    e.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e))) // yypIe.getDependents.unwrap.map(_fexA)^
   }
 
   case class GetDependents(dh: Exp[ReactiveEntity]) extends Def[ReactiveEntitySeq]
