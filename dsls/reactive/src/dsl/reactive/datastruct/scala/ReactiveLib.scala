@@ -4,15 +4,15 @@ import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 
 trait ReactiveEntity {
-  def getDependents: ReactiveEntitySeq
+  def getDependents: ReactiveEntities
   def forceReEval(): Unit
 }
 
-case class ReactiveEntitySeq(re: Seq[ReactiveEntity]) {
-  def size = re.size
-  def dcSize = re.size
-  def dcApply(i: Int) = re(i)
-  def dcUpdate(i: Int, n: Dependent) = ???
+case class ReactiveEntities(unwrap: Seq[ReactiveEntity]) {
+  def size = unwrap.size
+
+  def dcSize = size
+  def dcApply(i: Int) = unwrap(i)
 }
 
 /* A node that has nodes that depend on it */
@@ -26,7 +26,7 @@ trait DepHolder extends ReactiveEntity {
 
   def notifyDependents() { }
 
-  def getDependents: ReactiveEntitySeq = ReactiveEntitySeq(dependents.toSeq)
+  def getDependents: ReactiveEntities = ReactiveEntities(dependents.toSeq)
 }
 
 trait AccessableDepHolder[+T] extends DepHolder {
@@ -107,7 +107,7 @@ class Handler[T] private (exp: => T) extends Dependent {
   def dependsOnChanged(dep: DepHolder) = exp
   def reEvaluate = exp
   def forceReEval() = exp
-  def getDependents = ReactiveEntitySeq(List.empty)
+  def getDependents = ReactiveEntities(List.empty)
 }
 
 object Handler{
