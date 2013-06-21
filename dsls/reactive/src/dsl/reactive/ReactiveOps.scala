@@ -4,7 +4,9 @@ import scala.virtualization.lms.common._
 import ppl.delite.framework.ops.{DeliteCollectionOpsExp,DeliteOpsExp}
 import ppl.delite.framework.datastruct.scala.DeliteCollection
 
-trait Reactivity extends Base {
+trait Reactivity extends Base with MeasureOps with ExpensiveOps with OrderingOps {
+  type MyVar[A] = dsl.reactive.Var[A]
+
   implicit def toAccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) = new AccessableDepHolderOps(dh)
 
   class AccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) {
@@ -35,7 +37,7 @@ trait Reactivity extends Base {
     def apply[A:Manifest](v: Rep[A]): Rep[AccessableDepHolder[A]] = new_reactive_var(v)
   }
 
-  def new_reactive_var[A:Manifest](v: Rep[A]): Rep[Var[A]]
+  def new_reactive_var[A:Manifest](v: Rep[A]): Rep[MyVar[A]]
 
   object Signal {
     def apply[A:Manifest](dhs: Rep[DepHolder]*)(f: => Rep[A]) =
@@ -46,12 +48,16 @@ trait Reactivity extends Base {
 }
 
 trait ReactivityExp extends Reactivity 
+                    with MeasureOpsExp
+                    with ExpensiveOpsExp
+                    with OrderingOpsExp
                     with WhileExp
                     with ListOpsExp
                     with SeqOpsExp
                     with EffectExp 
                     with DeliteCollectionOpsExp 
                     with DeliteOpsExp 
+                    with FunctionsRecursiveExp
                     with IfThenElseExp {
 
   case class AccessDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]]) extends Def[A]
@@ -79,7 +85,12 @@ trait ReactivityExp extends Reactivity
 
   private def notify(e: Exp[ReactiveEntity]) {
     reflectEffect(NotifyDependents(e))
-    e.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e))) // yypIe.getDependents.unwrap.map(_fexA)^
+    // yypIe.getDependents.unwrap.map(_fexA)^
+    e.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e)))
+    e.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e))))
+    e.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e)))))
+    e.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(e =>
+    reflectEffect(NotifyDependents(e))))))
   }
 
   case class GetDependents(dh: Exp[ReactiveEntity]) extends Def[ReactiveEntities]
@@ -94,7 +105,6 @@ trait ReactivityExp extends Reactivity
     reflectEffect(ReEvaluation(elem))
   }
 
-  type MyVar[A] = dsl.reactive.Var[A]
   case class VarCreation[A:Manifest](value: Exp[A]) extends Def[MyVar[A]]
   override def new_reactive_var[A:Manifest](v: Exp[A]): Exp[MyVar[A]] = VarCreation(v)
 
@@ -114,7 +124,12 @@ trait ReactivityExp extends Reactivity
   }
 }
 
-trait ScalaGenReactivity extends ScalaGenBase with ScalaGenEffect with ScalaGenWhile {
+trait ScalaGenReactivity extends ScalaGenBase
+                         with ScalaGenMeasureOps
+                         with ScalaGenExpensiveOps
+                         with ScalaGenEffect
+                         with ScalaGenOrderingOps
+                         with ScalaGenWhile {
   val IR: ReactivityExp
   import IR._
 
