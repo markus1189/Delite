@@ -18,10 +18,12 @@ trait Reactivity extends Base with MeasureOps with ExpensiveOps with OrderingOps
   implicit def toReactiveEntityOps(entity: Rep[ReactiveEntity]) = new ReactiveEntityOps(entity)
   class ReactiveEntityOps(entity: Rep[ReactiveEntity]) {
     def getDependents: Rep[ReactiveEntities] = reactive_entity_dependents(entity)
+    def getDependentsList: Rep[List[ReactiveEntity]] = reactive_entity_dependents_list(entity)
     def reEvaluate() = re_evaluate(entity)
   }
 
   def reactive_entity_dependents(entity: Rep[ReactiveEntity]): Rep[ReactiveEntities]
+  def reactive_entity_dependents_list(entity: Rep[ReactiveEntity]): Rep[List[ReactiveEntity]]
   def re_evaluate(elem: Rep[ReactiveEntity]): Rep[Unit]
 
   implicit def toDepHolderOps(dh: Rep[DepHolder]) = new DepHolderOps(dh)
@@ -49,6 +51,7 @@ trait Reactivity extends Base with MeasureOps with ExpensiveOps with OrderingOps
 
 trait ReactivityExp extends Reactivity 
                     with MeasureOpsExp
+                    with BooleanOpsExp
                     with ExpensiveOpsExp
                     with OrderingOpsExp
                     with WhileExp
@@ -65,10 +68,7 @@ trait ReactivityExp extends Reactivity
     reflectMutable(AccessDepHolder(dh))
 
   case class GetSizeReactiveEntities(reSeq: Exp[ReactiveEntities]) extends Def[Int]
-  case class UnwrapReactiveEntities(reSeq: Exp[ReactiveEntities]) extends Def[List[ReactiveEntity]]
   def infix_size(reSeq: Exp[ReactiveEntities]): Exp[Int] = GetSizeReactiveEntities(reSeq)
-  def infix_unwrap(reSeq: Exp[ReactiveEntities]): Exp[List[ReactiveEntity]] = UnwrapReactiveEntities(reSeq)
-
 
   case class NotifyDependents(dh: Exp[ReactiveEntity]) extends DeliteOpForeach[ReactiveEntity] {
     def func: Exp[ReactiveEntity] => Exp[Unit] = _.reEvaluate()
@@ -83,14 +83,28 @@ trait ReactivityExp extends Reactivity
     notify(dh)
   }
 
+private def notify2(e: Exp[ReactiveEntity]) {
+  reflectEffect(NotifyDependents(e))
+  var deps: Exp[List[ReactiveEntity]] = e.getDependentsList
+
+  while(!list_isEmpty(deps)) {
+    var newDeps: Exp[List[ReactiveEntity]] = List()
+    deps.map { e =>
+      reflectEffect(NotifyDependents(e))
+      newDeps = list_concat(newDeps,e.getDependentsList)
+    }
+    deps = newDeps
+  }
+}
+
+
   private def notify(e: Exp[ReactiveEntity]) {
     reflectEffect(NotifyDependents(e))
-    // yypIe.getDependents.unwrap.map(_fexA)^
-    e.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e)))
-    e.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e))))
-    e.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(e => reflectEffect(NotifyDependents(e)))))
-    e.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(_.getDependents.unwrap.map(e =>
-    reflectEffect(NotifyDependents(e))))))
+    // yypIe.getDependentsList.map(_fexA)^
+    e.getDependentsList.map(e => reflectEffect(NotifyDependents(e)))
+    e.getDependentsList.map(_.getDependentsList.map(e => reflectEffect(NotifyDependents(e))))
+    e.getDependentsList.map(_.getDependentsList.map(_.getDependentsList.map(e => reflectEffect(NotifyDependents(e)))))
+    //e.getDependentsList.map(_.getDependentsList.map(_.getDependentsList.map(_.getDependentsList.map(e => reflectEffect(NotifyDependents(e))))))
   }
 
   case class GetDependents(dh: Exp[ReactiveEntity]) extends Def[ReactiveEntities]
@@ -99,6 +113,10 @@ trait ReactivityExp extends Reactivity
 
   override def reactive_entity_dependents(entity: Exp[ReactiveEntity]): Exp[ReactiveEntities] =
     GetDependents(entity)
+
+  case class GetDependentsList(dh: Exp[ReactiveEntity]) extends Def[List[ReactiveEntity]]
+  override def reactive_entity_dependents_list(entity: Exp[ReactiveEntity]): Exp[List[ReactiveEntity]] =
+    GetDependentsList(entity)
 
   case class ReEvaluation(elem: Exp[ReactiveEntity]) extends Def[Unit]
   override def re_evaluate(elem: Exp[ReactiveEntity]): Exp[Unit] = {
@@ -135,10 +153,10 @@ trait ScalaGenReactivity extends ScalaGenBase
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit =  node match {
     case GetSizeReactiveEntities(reSeq) => emitValDef(sym, quote(reSeq) + ".size")
-    case UnwrapReactiveEntities(reSeq)  => emitValDef(sym, quote(reSeq) + ".unwrap.toList")
     case AccessDepHolder(dh)            => emitValDef(sym, quote(dh) + ".get")
     case ReEvaluation(elem)             => emitValDef(sym, quote(elem) + ".forceReEval()")
     case GetDependents(dh)              => emitValDef(sym, quote(dh) + ".getDependents")
+    case GetDependentsList(dh)          => emitValDef(sym, quote(dh) + ".getDependentsList")
     case SetDepHolder(dh,value)         => emitValDef(sym, quote(dh) + ".set(" + quote(value) + ")")
     case VarCreation(v)                 => emitValDef(sym, "Var(" + quote(v) + ")")
     case SignalCreation(dhs,f)          => emitValDef(sym, "Signal(" + dhs.map(quote).mkString(", ") + ") { ")

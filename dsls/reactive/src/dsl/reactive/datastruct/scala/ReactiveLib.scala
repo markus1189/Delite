@@ -5,6 +5,7 @@ import scala.collection.mutable.ListBuffer
 
 trait ReactiveEntity {
   def getDependents: ReactiveEntities
+  def getDependentsList: List[ReactiveEntity]
   def forceReEval(): Unit
 }
 
@@ -24,9 +25,10 @@ trait DepHolder extends ReactiveEntity {
 
   def removeDependent(dep: Dependent) { dependents -= dep }
 
-  def notifyDependents() { }
+  def notifyDependents() {}
 
   def getDependents: ReactiveEntities = ReactiveEntities(dependents.toSeq)
+  def getDependentsList: List[ReactiveEntity] = dependents.toList
 }
 
 trait AccessableDepHolder[+T] extends DepHolder {
@@ -44,6 +46,8 @@ trait Dependent extends ReactiveEntity {
 
   /* A node on which this one depends is changed */
   def dependsOnChanged(dep: DepHolder)
+
+  def forceReEval(): Unit
 }
 
 object Dependent {
@@ -108,6 +112,7 @@ class Handler[T] private (exp: => T) extends Dependent {
   def reEvaluate = exp
   def forceReEval() = exp
   def getDependents = ReactiveEntities(List.empty)
+  def getDependentsList = List.empty
 }
 
 object Handler{
