@@ -9,7 +9,7 @@ trait ExpensiveOps extends Base {
 trait ExpensiveOpsExp extends ExpensiveOps with EffectExp {
   case class Expensive(x: Exp[Long]) extends Def[Long]
   def expensive(x: Exp[Long]): Exp[Long] = {
-    reflectEffect(new Expensive(x))
+    new Expensive(x)
   }
 }
 
@@ -18,7 +18,10 @@ trait ScalaGenExpensiveOps extends ScalaGenBase {
   import IR._
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit =  node match {
-    case Expensive(x) => emitValDef(sym,"{ def fac(x: Long): Long = if (x <= 1) 1 else x*fac(x-1); \n fac(" + quote(x) + ") }")
+    case Expensive(x) => emitValDef(sym,
+      "{ def fib(x: Long): Long = x match { case 1 => 1; case 2 => 1; case _ => fib(x-1) + fib(x-2) }" + "\n fib(" + quote(x) + ") }")
+      //"{ def fac(x: Long): Long = if (x <= 1) 1 else { x*fac(x-1) }; \n" +
+      //"fac(" + quote(x) + ") }")
     case _         => super.emitNode(sym,node)
   }
 }
