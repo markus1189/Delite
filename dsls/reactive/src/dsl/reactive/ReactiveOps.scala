@@ -44,10 +44,10 @@ trait Reactivity extends Base with MeasureOps with ExpensiveOps {
 
   object Signal {
     def apply[A:Manifest](dhs: Rep[DepHolder]*)(f: => Rep[A]) =
-      new_reactive_signal(dhs, f)
+      new_behavior(dhs, f)
   }
 
-  def new_reactive_signal[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Behavior[A]]
+  def new_behavior[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Behavior[A]]
 }
 
 trait ReactivityExp extends Reactivity 
@@ -131,7 +131,7 @@ trait ReactivityExp extends Reactivity
     body: Block[A]
   ) extends Def[Behavior[A]]
 
-  override def new_reactive_signal[A:Manifest](
+  override def new_behavior[A:Manifest](
     dhs: Seq[Exp[DepHolder]],
     f: => Exp[A]
   ): Exp[Behavior[A]] = SignalCreation(dhs, reifyEffects(f))
@@ -143,7 +143,18 @@ trait ReactivityExp extends Reactivity
 }
 
 trait ReactivityExpOpt extends ReactivityExp {
+  override def new_behavior[A:Manifest](
+    dhs: Seq[Exp[DepHolder]], f: => Exp[A]): Exp[Behavior[A]] = {
 
+    if (dhs.isEmpty) {
+      ConstantCreation(reifyEffects(f))
+    } else {
+      SignalCreation(dhs, reifyEffects(f))
+    }
+
+  }
+
+  case class ConstantCreation[A:Manifest]( body: Block[A]) extends Def[Behavior[A]]
 }
 
 trait ScalaGenReactivity extends ScalaGenBase
@@ -168,5 +179,19 @@ trait ScalaGenReactivity extends ScalaGenBase
                                              stream.println(quote(getBlockResult(f)) + "\n")
                                            stream.println("}")
     case _                              => super.emitNode(sym,node)
+  }
+}
+
+trait ScalaGenReactivityOpt extends ScalaGenReactivity {
+  val IR: ReactivityExpOpt
+  import IR._
+
+  override def emitNode(sym: Sym[Any], node: Def[Any]): Unit =  node match {
+    case ConstantCreation(f) => emitValDef(sym, "Constant {")
+                                  emitBlock(f)
+                                  stream.println(quote(getBlockResult(f)) + "\n")
+                                stream.println("}")
+    case _ => super.emitNode(sym,node)
+
   }
 }
