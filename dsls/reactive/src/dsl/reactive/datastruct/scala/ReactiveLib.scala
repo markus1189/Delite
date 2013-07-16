@@ -75,8 +75,9 @@ object Var {
   def apply[T](initialValue: T) = new Var(initialValue)
 }
 
-class Signal[+T] private (depHolders: Seq[DepHolder])(expr: => T)
-  extends Dependent with AccessableDepHolder[T] {
+trait Behavior[+T] extends Dependent with AccessableDepHolder[T]
+
+class Signal[+T] private (depHolders: Seq[DepHolder])(expr: => T) extends Behavior[T] {
 
   private[this] var heldValue = expr
 
@@ -100,8 +101,20 @@ class Signal[+T] private (depHolders: Seq[DepHolder])(expr: => T)
 }
 
 object Signal {
-  def apply[T](depHolders: DepHolder*)(expr: => T) =
+  def apply[T](depHolders: DepHolder*)(expr: => T): Behavior[T] =
     new Signal(depHolders)(expr)
+}
+
+class Constant[+T] private (expr: => T) extends Behavior[T] {
+  val const = expr
+
+  def get: T = const
+  def dependsOnChanged(dep: DepHolder): Unit = ()
+  def forceReEval(): Unit = ()
+}
+
+object Constant {
+  def apply[T](expr: => T): Behavior[T] = new Constant(expr)
 }
 
 /**
