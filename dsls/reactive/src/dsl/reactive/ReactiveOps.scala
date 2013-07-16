@@ -4,10 +4,11 @@ import scala.virtualization.lms.common._
 import ppl.delite.framework.ops.{DeliteCollectionOpsExp,DeliteOpsExp}
 import ppl.delite.framework.datastruct.scala.DeliteCollection
 
-trait Reactivity extends Base with MeasureOps with ExpensiveOps with OrderingOps {
+trait Reactivity extends Base with MeasureOps with ExpensiveOps {
   type MyVar[A] = dsl.reactive.Var[A]
 
-  implicit def toAccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) = new AccessableDepHolderOps(dh)
+  implicit def toAccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) =
+    new AccessableDepHolderOps(dh)
 
   class AccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) {
     def get: Rep[A] = dep_holder_access(dh)
@@ -46,7 +47,7 @@ trait Reactivity extends Base with MeasureOps with ExpensiveOps with OrderingOps
       new_reactive_signal(dhs, f)
   }
 
-  def new_reactive_signal[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Signal[A]]
+  def new_reactive_signal[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Behavior[A]]
 }
 
 trait ReactivityExp extends Reactivity 
@@ -83,20 +84,19 @@ trait ReactivityExp extends Reactivity
     notify(dh)
   }
 
-private def notify2(e: Exp[ReactiveEntity]) {
-  reflectEffect(NotifyDependents(e))
-  var deps: Exp[List[ReactiveEntity]] = e.getDependentsList
+  private def notify2(e: Exp[ReactiveEntity]) {
+    reflectEffect(NotifyDependents(e))
+    var deps: Exp[List[ReactiveEntity]] = e.getDependentsList
 
-  while(!list_isEmpty(deps)) {
-    var newDeps: Exp[List[ReactiveEntity]] = List()
-    deps.map { e =>
-      reflectEffect(NotifyDependents(e))
-      newDeps = list_concat(newDeps,e.getDependentsList)
+    while(!list_isEmpty(deps)) {
+      var newDeps: Exp[List[ReactiveEntity]] = List()
+      deps.map { e =>
+        reflectEffect(NotifyDependents(e))
+        newDeps = list_concat(newDeps,e.getDependentsList)
+      }
+      deps = newDeps
     }
-    deps = newDeps
   }
-}
-
 
   private def notify(e: Exp[ReactiveEntity]) {
     reflectEffect(NotifyDependents(e))
@@ -129,17 +129,21 @@ private def notify2(e: Exp[ReactiveEntity]) {
   case class SignalCreation[A:Manifest](
     dhs: Seq[Exp[DepHolder]],
     body: Block[A]
-  ) extends Def[Signal[A]]
+  ) extends Def[Behavior[A]]
 
   override def new_reactive_signal[A:Manifest](
     dhs: Seq[Exp[DepHolder]],
     f: => Exp[A]
-  ): Exp[Signal[A]] = SignalCreation(dhs, reifyEffects(f))
+  ): Exp[Behavior[A]] = SignalCreation(dhs, reifyEffects(f))
 
   override def boundSyms(e: Any): List[Sym[Any]] = e match {
     case SignalCreation(dhs,body) => effectSyms(body)
     case _ => super.boundSyms(e)
   }
+}
+
+trait ReactivityExpOpt extends ReactivityExp {
+
 }
 
 trait ScalaGenReactivity extends ScalaGenBase
