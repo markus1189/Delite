@@ -143,15 +143,33 @@ trait ReactivityExp extends Reactivity
 }
 
 trait ReactivityExpOpt extends ReactivityExp {
+
+  private def onlyConstants(dhs: Seq[Exp[DepHolder]]): Boolean =  {
+    val syms: Seq[Sym[DepHolder]] =
+      dhs.filter { case Sym(x) => true; case _ => false }.asInstanceOf[Seq[Sym[DepHolder]]]
+
+    val defs: Seq[Def[Any]] = syms.map(findDefinition(_)).map {
+      case Some(TP(_,rhs)) => Some(rhs)
+      case _ => None
+    }.filter(_.isDefined).map(_.get)
+
+    defs.forall {
+      case ConstantCreation(_) => true
+      case _ => false
+    }
+  }
+
   override def new_behavior[A:Manifest](
     dhs: Seq[Exp[DepHolder]], f: => Exp[A]): Exp[Behavior[A]] = {
 
+    // Signal creation without dependency holders => constant
     if (dhs.isEmpty) {
+      ConstantCreation(reifyEffects(f))
+    } else if (onlyConstants(dhs)) {
       ConstantCreation(reifyEffects(f))
     } else {
       SignalCreation(dhs, reifyEffects(f))
     }
-
   }
 
   case class ConstantCreation[A:Manifest]( body: Block[A]) extends Def[Behavior[A]]
