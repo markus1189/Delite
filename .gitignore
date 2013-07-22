@@ -27,3 +27,4 @@ test-out/*/*-skel
 test-out/*/*-src
 dsls/deliszt/lisztlib
 profiler/less
+.ensime*
