@@ -16,7 +16,7 @@ trait ScalaGenMeasureOps extends ScalaGenBase {
   import IR._
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit =  node match {
-    case PrintTime => emitValDef(sym,"println(\"Current time: \" + System.currentTimeMillis)")
+    case PrintTime => emitValDef(sym,"System.err.println(\"[TIME]: \" + System.currentTimeMillis)")
     case _         => super.emitNode(sym,node)
   }
 }
