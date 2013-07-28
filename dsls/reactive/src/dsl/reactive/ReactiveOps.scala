@@ -56,7 +56,7 @@ trait Reactivity extends Base with MeasureOps with ExpensiveOps {
   def new_behavior[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Behavior[A]]
 }
 
-trait ReactivityExp extends Reactivity 
+trait ReactivityExp extends Reactivity
                     with MeasureOpsExp
                     with BooleanOpsExp
                     with ExpensiveOpsExp
@@ -64,9 +64,9 @@ trait ReactivityExp extends Reactivity
                     with WhileExp
                     with ListOpsExp
                     with SeqOpsExp
-                    with EffectExp 
-                    with DeliteCollectionOpsExp 
-                    with DeliteOpsExp 
+                    with EffectExp
+                    with DeliteCollectionOpsExp
+                    with DeliteOpsExp
                     with FunctionsRecursiveExp
                     with IfThenElseExp {
 
