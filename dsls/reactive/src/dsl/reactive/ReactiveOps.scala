@@ -148,10 +148,9 @@ trait ReactivityExpOpt extends ReactivityExp {
   override def new_behavior[A:Manifest](
     dhs: Seq[Exp[DepHolder]], f: => Exp[A]): Exp[Behavior[A]] = {
 
-    // Signal creation without dependency holders => constant
-    if (dhs.isEmpty) {
-      ConstantCreation(reifyEffects(f))
-    } else if (onlyConstants(dhs)) {
+    if (dhs.isEmpty || onlyConstants(dhs)) {
+      // Signal creation without dependency holders => constant
+      // Signal with only constant deps => constant
       ConstantCreation(reifyEffects(f))
     } else {
       SignalCreation(dhs, reifyEffects(f))
