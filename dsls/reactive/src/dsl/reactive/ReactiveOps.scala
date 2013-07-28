@@ -84,20 +84,6 @@ trait ReactivityExp extends Reactivity
     notify(dh)
   }
 
-  private def notify2(e: Exp[ReactiveEntity]) {
-    reflectEffect(NotifyDependents(e))
-    var deps: Exp[List[ReactiveEntity]] = e.getDependentsList
-
-    while(!list_isEmpty(deps)) {
-      var newDeps: Exp[List[ReactiveEntity]] = List()
-      deps.map { e =>
-        reflectEffect(NotifyDependents(e))
-        newDeps = list_concat(newDeps,e.getDependentsList)
-      }
-      deps = newDeps
-    }
-  }
-
   private def notify(e: Exp[ReactiveEntity]) {
     reflectEffect(NotifyDependents(e))
     // yypIe.getDependentsList.map(_fexA)^
