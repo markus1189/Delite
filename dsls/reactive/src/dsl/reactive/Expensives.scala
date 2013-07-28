@@ -4,7 +4,7 @@ import scala.virtualization.lms.internal.GraphVizExport
 
 object ExpensivesRunner extends ReactiveApplicationRunner with Expensives
 
-trait Expensives extends ReactiveApplication { 
+trait Expensives extends ReactiveApplication {
   def main() = {
   val value = 40
 
