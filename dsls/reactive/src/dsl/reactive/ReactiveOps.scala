@@ -16,10 +16,16 @@ trait Reactivity extends Base with MeasureOps with ExpensiveOps {
     def getDependents: Rep[ReactiveEntities] = dep_holder_dependents(dh)
   }
 
-  implicit def toReactiveEntityOps(entity: Rep[ReactiveEntity]) = new ReactiveEntityOps(entity)
+  implicit def toReactiveEntityOps(entity: Rep[ReactiveEntity]) =
+    new ReactiveEntityOps(entity)
+
   class ReactiveEntityOps(entity: Rep[ReactiveEntity]) {
-    def getDependents: Rep[ReactiveEntities] = reactive_entity_dependents(entity)
-    def getDependentsList: Rep[List[ReactiveEntity]] = reactive_entity_dependents_list(entity)
+    def getDependents: Rep[ReactiveEntities] =
+      reactive_entity_dependents(entity)
+
+    def getDependentsList: Rep[List[ReactiveEntity]] =
+      reactive_entity_dependents_list(entity)
+
     def reEvaluate() = re_evaluate(entity)
   }
 
