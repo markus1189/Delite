@@ -164,6 +164,13 @@ trait ReactivityExpOpt extends ReactivityExp {
   }
 
   case class ConstantCreation[A:Manifest]( body: Block[A]) extends Def[Behavior[A]]
+  case class ConstantAccess[A:Manifest](body : Block[A]) extends Def[A]
+
+  override def dep_holder_access[A:Manifest](dh: Exp[AccessableDepHolder[A]]): Exp[A] = dh match {
+    case Def(ConstantCreation(x)) => ConstantAccess(x)
+    case _ => super.dep_holder_access(dh)
+  }
+
 }
 
 trait ScalaGenReactivity extends ScalaGenBase
@@ -196,6 +203,7 @@ trait ScalaGenReactivityOpt extends ScalaGenReactivity {
   import IR._
 
   override def emitNode(sym: Sym[Any], node: Def[Any]): Unit =  node match {
+    case ConstantAccess(f) => emitValDef(sym, quote(getBlockResult(f)))
     case ConstantCreation(f) => emitValDef(sym, "Constant {")
                                   emitBlock(f)
                                   stream.println(quote(getBlockResult(f)) + "\n")
