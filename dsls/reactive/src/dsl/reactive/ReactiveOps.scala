@@ -173,6 +173,15 @@ trait ReactivityExpOpt extends ReactivityExp {
 
 }
 
+trait TransparentReactivity {
+  this: Reactivity with LiftVariables =>
+
+  //def __newVar[T:Manifest](value: Rep[T]): Rep[MyVar[T]] = new_reactive_var(value)
+  def __newVar[T:Manifest](value: T): Rep[MyVar[T]] = new_reactive_var(unit(value))
+  def __assign[T:Manifest](lhs: Rep[MyVar[T]], rhs: Rep[T]): Rep[Unit] = dep_holder_set(lhs,rhs)
+
+}
+
 trait ScalaGenReactivity extends ScalaGenBase
                          with ScalaGenMeasureOps
                          with ScalaGenExpensiveOps
