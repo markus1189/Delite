@@ -4,7 +4,7 @@ object TransparencyRunner extends ReactiveApplicationRunner with TestTransparenc
 
 trait TestTransparency extends ReactiveApplication with TransparentReactivity {
   def main() = {
-    var source1: Rep[MyVar[Int]] = 5
+    var source1: Rep[dsl.reactive.Var[Int]] = 5
 
     source1 = 15
 

@@ -4,21 +4,16 @@ import scala.virtualization.lms.common._
 import ppl.delite.framework.ops.{DeliteCollectionOpsExp,DeliteOpsExp}
 import ppl.delite.framework.datastruct.scala.DeliteCollection
 
-trait Reactivity extends Base with MeasureOps with ExpensiveOps with InferredSignals {
-  type MyVar[A] = dsl.reactive.Var[A]
+trait Reactivity extends Base
+    with MeasureOps
+    with ExpensiveOps
+    with InferredSignals
+    with SignalSyntax
+    with VarSyntax
+    with DepHolderSyntax
+    with ReactiveEntitySyntax
 
-  implicit def toAccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) =
-    new AccessableDepHolderOps(dh)
-
-  class AccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) {
-    def get: Rep[A] = dep_holder_access(dh)
-  }
-
-  implicit def toVarOps[A:Manifest](v: Rep[MyVar[A]]): VarOps[A] = new VarOps(v)
-  class VarOps[A:Manifest](v: Rep[MyVar[A]]) {
-    def set(value: Rep[A]): Rep[Unit] = dep_holder_set(v, value)
-  }
-
+trait ReactiveEntitySyntax extends Base {
   implicit def toReactiveEntityOps(entity: Rep[ReactiveEntity]) =
     new ReactiveEntityOps(entity)
 
@@ -35,24 +30,28 @@ trait Reactivity extends Base with MeasureOps with ExpensiveOps with InferredSig
   def reactive_entity_dependents(entity: Rep[ReactiveEntity]): Rep[ReactiveEntities]
   def reactive_entity_dependents_list(entity: Rep[ReactiveEntity]): Rep[List[ReactiveEntity]]
   def re_evaluate(elem: Rep[ReactiveEntity]): Rep[Unit]
+}
+
+trait DepHolderSyntax extends Base {
+  class AccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) {
+    def get: Rep[A] = dep_holder_access(dh)
+  }
+
+  implicit def toAccessableDepHolderOps[A:Manifest](
+    dh: Rep[AccessableDepHolder[A]]) =
+      new AccessableDepHolderOps(dh)
+
+  def dep_holder_access[A:Manifest](dh: Rep[AccessableDepHolder[A]]): Rep[A]
 
   implicit def toDepHolderOps(dh: Rep[DepHolder]): DepHolderOps = new DepHolderOps(dh)
   class DepHolderOps(dh: Rep[DepHolder]) {
     def getDependents: Rep[ReactiveEntities] = dep_holder_dependents(dh)
   }
 
-  def dep_holder_access[A:Manifest](dh: Rep[AccessableDepHolder[A]]): Rep[A]
-
-  def dep_holder_set[A:Manifest](v: Rep[MyVar[A]], value: Rep[A]): Rep[Unit]
-
   def dep_holder_dependents(dh: Rep[DepHolder]): Rep[ReactiveEntities]
+}
 
-  object Var {
-    def apply[A:Manifest](v: Rep[A]): Rep[MyVar[A]] = new_reactive_var(v)
-  }
-
-  def new_reactive_var[A:Manifest](v: Rep[A]): Rep[MyVar[A]]
-
+trait SignalSyntax extends Base {
   object Signal {
     def apply[A:Manifest](dhs: Rep[DepHolder]*)(f: => Rep[A]) =
       new_behavior(dhs, f)
@@ -61,25 +60,19 @@ trait Reactivity extends Base with MeasureOps with ExpensiveOps with InferredSig
   def new_behavior[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Behavior[A]]
 }
 
-trait SignalSyntax {
-  this: Reactivity =>
-
-  object Signal {
-    def apply[A:Manifest](dhs: Rep[DepHolder]*)(f: => Rep[A]) =
-      new_behavior(dhs, f)
+trait VarSyntax extends Base {
+  implicit def toVarOps[A:Manifest](v: Rep[dsl.reactive.Var[A]]): VarOps[A] = new VarOps(v)
+  class VarOps[A:Manifest](v: Rep[dsl.reactive.Var[A]]) {
+    def set(value: Rep[A]): Rep[Unit] = dep_holder_set(v, value)
   }
 
-  def new_behavior[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Behavior[A]]
-}
-
-trait VarSyntax {
-  this: Reactivity =>
+  def dep_holder_set[A:Manifest](v: Rep[dsl.reactive.Var[A]], value: Rep[A]): Rep[Unit]
 
   object Var {
-    def apply[A:Manifest](v: Rep[A]): Rep[AccessableDepHolder[A]] = new_reactive_var(v)
+    def apply[A:Manifest](v: Rep[A]): Rep[dsl.reactive.Var[A]] = new_reactive_var(v)
   }
 
-  def new_reactive_var[A:Manifest](v: Rep[A]): Rep[MyVar[A]]
+  def new_reactive_var[A:Manifest](v: Rep[A]): Rep[dsl.reactive.Var[A]]
 }
 
 trait ReactivityExp extends Reactivity
@@ -111,8 +104,8 @@ trait ReactivityExp extends Reactivity
     def sync: Exp[Int] => Exp[List[Any]] = _ => List[Any]()
   }
 
-  case class SetDepHolder[A:Manifest](dh: Exp[MyVar[A]], value: Exp[A]) extends Def[Unit]
-  override def dep_holder_set[A:Manifest](dh: Exp[MyVar[A]], value: Exp[A]): Exp[Unit] = {
+  case class SetDepHolder[A:Manifest](dh: Exp[dsl.reactive.Var[A]], value: Exp[A]) extends Def[Unit]
+  override def dep_holder_set[A:Manifest](dh: Exp[dsl.reactive.Var[A]], value: Exp[A]): Exp[Unit] = {
     reflectEffect(SetDepHolder(dh,value))
     notify(dh)
   }
@@ -142,8 +135,8 @@ trait ReactivityExp extends Reactivity
     reflectEffect(ReEvaluation(elem))
   }
 
-  case class VarCreation[A:Manifest](value: Exp[A]) extends Def[MyVar[A]]
-  override def new_reactive_var[A:Manifest](v: Exp[A]): Exp[MyVar[A]] = VarCreation(v)
+  case class VarCreation[A:Manifest](value: Exp[A]) extends Def[dsl.reactive.Var[A]]
+  override def new_reactive_var[A:Manifest](v: Exp[A]): Exp[dsl.reactive.Var[A]] = VarCreation(v)
 
   case class SignalCreation[A:Manifest](
     dhs: Seq[Exp[DepHolder]],
@@ -231,11 +224,10 @@ trait InferredSignalsExp extends InferredSignals {
 }
 
 trait TransparentReactivity {
-  this: Reactivity with LiftVariables =>
+  this: VarSyntax with LiftVariables =>
 
-  //def __newVar[T:Manifest](value: Rep[T]): Rep[MyVar[T]] = new_reactive_var(value)
-  def __newVar[T:Manifest](value: T): Rep[MyVar[T]] = new_reactive_var(unit(value))
-  def __assign[T:Manifest](lhs: Rep[MyVar[T]], rhs: Rep[T]): Rep[Unit] = dep_holder_set(lhs,rhs)
+  def __newVar[T:Manifest](value: T): Rep[dsl.reactive.Var[T]] = new_reactive_var(unit(value))
+  def __assign[T:Manifest](lhs: Rep[dsl.reactive.Var[T]], rhs: Rep[T]): Rep[Unit] = dep_holder_set(lhs,rhs)
 
 }
 
