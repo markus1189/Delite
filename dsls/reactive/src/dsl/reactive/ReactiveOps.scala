@@ -4,7 +4,7 @@ import scala.virtualization.lms.common._
 import ppl.delite.framework.ops.{DeliteCollectionOpsExp,DeliteOpsExp}
 import ppl.delite.framework.datastruct.scala.DeliteCollection
 
-trait Reactivity extends Base with MeasureOps with ExpensiveOps {
+trait Reactivity extends Base with MeasureOps with ExpensiveOps with InferredSignals {
   type MyVar[A] = dsl.reactive.Var[A]
 
   implicit def toAccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) =
@@ -68,7 +68,8 @@ trait ReactivityExp extends Reactivity
                     with DeliteCollectionOpsExp
                     with DeliteOpsExp
                     with FunctionsRecursiveExp
-                    with IfThenElseExp {
+                    with IfThenElseExp
+                    with InferredSignalsExp {
 
   case class AccessDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]]) extends Def[A]
   override def dep_holder_access[A:Manifest](dh: Exp[AccessableDepHolder[A]]): Exp[A] =
@@ -177,7 +178,7 @@ trait ReactivityExpOpt extends ReactivityExp {
 trait InferredSignals {
   this: Reactivity =>
 
-  object Signal {
+  object ISignal {
     def apply[A:Manifest](f: => Rep[A]) =
       new_inferred_signal(f)
   }
