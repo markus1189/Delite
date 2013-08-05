@@ -6,7 +6,7 @@ object ExpensivesRunner extends ReactiveApplicationRunner with Expensives
 
 trait Expensives extends ReactiveApplication {
   def main() = {
-  val value = 40
+  val value: Long = 40
 
   val  x0  = Var(3l)
   val  y0  = Signal(x0){expensive(x0.get)}
