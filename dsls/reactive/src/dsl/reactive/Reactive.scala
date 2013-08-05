@@ -19,8 +19,8 @@ abstract class Var[A:Manifest] extends AccessableDepHolder[A]
 abstract class Signal[+A:Manifest] extends Dependent with AccessableDepHolder[A]
 abstract class ReactiveEntities extends DeliteCollection[ReactiveEntity]
 
-trait ReactiveApplicationRunner extends ReactiveApplication 
-                                with DeliteApplication 
+trait ReactiveApplicationRunner extends ReactiveApplication
+                                with DeliteApplication
                                 with ReactiveExp
 
 trait ReactiveApplication extends Reactive with ReactiveLift {
@@ -42,7 +42,7 @@ trait ReactiveExp extends Reactive with ScalaOpsPkgExp with ReactivityExpOpt
 
   def getCodeGenPkg(t: Target{val IR: ReactiveExp.this.type}):
     GenericFatCodegen{val IR: ReactiveExp.this.type} = {
-    
+
     t match {
       case _:TargetScala => new ReactiveCodeGenScala {
         val IR: ReactiveExp.this.type = ReactiveExp.this
@@ -56,14 +56,14 @@ trait ReactiveExp extends Reactive with ScalaOpsPkgExp with ReactivityExpOpt
 trait ReactiveCodeGenBase extends GenericFatCodegen with codegen.Utils {
   val IR: DeliteApplication with ReactiveExp
   override def initialDefs = IR.deliteGenerator.availableDefs
-  
+
   def dsmap(s: String) = {
     var res = s.replaceAll("dsl.reactive.datastruct", "generated")
     res.replaceAll("dsl.reactive", "generated.scala")
   }
-  
+
   override def remap[A](m: Manifest[A]): String = dsmap(super.remap(m))
-  
+
   override def emitDataStructures(path: String) {
     val s = File.separator
     val dsRoot = Config.homeDir + s+"dsls"+s+"reactive"+s+"src"+s+
@@ -73,10 +73,10 @@ trait ReactiveCodeGenBase extends GenericFatCodegen with codegen.Utils {
   }
 }
 
-trait ReactiveCodeGenScala extends ReactiveCodeGenBase with ScalaCodeGenPkg 
+trait ReactiveCodeGenScala extends ReactiveCodeGenBase with ScalaCodeGenPkg
   with ScalaGenDeliteOps with ScalaGenReactivityOpt
-  with ScalaGenVariantsOps with ScalaGenDeliteCollectionOps 
+  with ScalaGenVariantsOps with ScalaGenDeliteCollectionOps
   with DeliteScalaGenAllOverrides {
-      
+
   val IR: DeliteApplication with ReactiveExp
 }
