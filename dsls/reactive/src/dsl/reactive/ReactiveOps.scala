@@ -5,6 +5,7 @@ import ppl.delite.framework.ops.{DeliteCollectionOpsExp,DeliteOpsExp}
 import ppl.delite.framework.datastruct.scala.DeliteCollection
 
 import dsl.reactive.syntax._
+import dsl.reactive.ops._
 import dsl.reactive.optimizations._
 
 trait Reactivity
@@ -24,7 +25,8 @@ trait ReactivityExp extends Reactivity
                     with EffectExp
                     with DeliteCollectionOpsExp
                     with DeliteOpsExp
-                    with InferredSignalsExp {
+                    with InferredSignalsExp
+                    with SignalOps {
 
   case class AccessDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]]) extends Def[A]
   override def dep_holder_access[A:Manifest](dh: Exp[AccessableDepHolder[A]]): Exp[A] =
@@ -74,20 +76,6 @@ trait ReactivityExp extends Reactivity
   case class VarCreation[A:Manifest](value: Exp[A]) extends Def[dsl.reactive.Var[A]]
   override def new_reactive_var[A:Manifest](v: Exp[A]): Exp[dsl.reactive.Var[A]] = VarCreation(v)
 
-  case class SignalCreation[A:Manifest](
-    dhs: Seq[Exp[DepHolder]],
-    body: Block[A]
-  ) extends Def[Behavior[A]]
-
-  override def new_behavior[A:Manifest](
-    dhs: Seq[Exp[DepHolder]],
-    f: => Exp[A]
-  ): Exp[Behavior[A]] = SignalCreation(dhs, reifyEffects(f))
-
-  override def boundSyms(e: Any): List[Sym[Any]] = e match {
-    case SignalCreation(dhs,body) => effectSyms(body)
-    case _ => super.boundSyms(e)
-  }
 }
 
 // Optimize Signals with constant dependencies
