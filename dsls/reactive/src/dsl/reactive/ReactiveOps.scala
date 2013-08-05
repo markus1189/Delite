@@ -190,8 +190,7 @@ trait InferredSignalsExp extends InferredSignals {
   this: ReactivityExp =>
 
   override def new_inferred_signal[A:Manifest](f: => Exp[A]): Exp[Behavior[A]] = {
-    val blk = reifyEffects(f)
-    SignalCreation(inferReactiveAccess(blk), blk)
+    new_behavior(inferReactiveAccess(reifyEffects(f)), f)
   }
 
   def inferReactiveAccess(bdy: Block[_]): List[Exp[DepHolder]] = {
@@ -201,8 +200,8 @@ trait InferredSignalsExp extends InferredSignals {
         case Some(TP(_,Reflect(AccessDepHolder(access),_,_))) => access
       }
 
-      defs.asInstanceOf[List[Exp[DepHolder]]]
-    }
+    defs.asInstanceOf[List[Exp[DepHolder]]]
+  }
 }
 
 trait TransparentReactivity {
