@@ -40,14 +40,6 @@ trait Propagation extends EffectExp
     //e.getDependentsList.map(_.getDependentsList.map(_.getDependentsList.map(_.getDependentsList.map(e => reflectEffect(NotifyDependents(e))))))
   }
 
-  case class GetDependentsList(dh: Exp[ReactiveEntity]) extends Def[List[ReactiveEntity]]
-  override def reactive_entity_dependents_list(entity: Exp[ReactiveEntity]): Exp[List[ReactiveEntity]] =
-    GetDependentsList(entity)
-
-  case class ReEvaluation(elem: Exp[ReactiveEntity]) extends Def[Unit]
-  override def re_evaluate(elem: Exp[ReactiveEntity]): Exp[Unit] = {
-    reflectEffect(ReEvaluation(elem))
-  }
 
   case class GetSizeReactiveEntities(reSeq: Exp[ReactiveEntities]) extends Def[Int]
   def infix_size(reSeq: Exp[ReactiveEntities]): Exp[Int] = GetSizeReactiveEntities(reSeq)

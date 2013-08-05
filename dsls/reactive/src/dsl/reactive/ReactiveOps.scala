@@ -24,22 +24,9 @@ trait ReactivityExp extends Reactivity
                     with InferredSignalsExp
                     with VarOps
                     with SignalOps
-                    with Propagation {
-
-  case class AccessDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]]) extends Def[A]
-  override def dep_holder_access[A:Manifest](dh: Exp[AccessableDepHolder[A]]): Exp[A] =
-    reflectMutable(AccessDepHolder(dh))
-
-
-  case class GetDependents(dh: Exp[ReactiveEntity]) extends Def[ReactiveEntities]
-  override def dep_holder_dependents(dh: Exp[DepHolder]): Exp[ReactiveEntities] =
-    GetDependents(dh)
-
-  override def reactive_entity_dependents(entity: Exp[ReactiveEntity]): Exp[ReactiveEntities] =
-    GetDependents(entity)
-
-
-}
+                    with DepHolderOps
+                    with ReactiveEntityOps
+                    with Propagation
 
 // Optimize Signals with constant dependencies
 trait ReactivityExpOpt extends ReactivityExp {
