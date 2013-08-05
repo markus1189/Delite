@@ -26,6 +26,7 @@ trait ReactivityExp extends Reactivity
                     with DeliteCollectionOpsExp
                     with DeliteOpsExp
                     with InferredSignalsExp
+                    with VarOps
                     with SignalOps {
 
   case class AccessDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]]) extends Def[A]
@@ -72,10 +73,6 @@ trait ReactivityExp extends Reactivity
   override def re_evaluate(elem: Exp[ReactiveEntity]): Exp[Unit] = {
     reflectEffect(ReEvaluation(elem))
   }
-
-  case class VarCreation[A:Manifest](value: Exp[A]) extends Def[dsl.reactive.Var[A]]
-  override def new_reactive_var[A:Manifest](v: Exp[A]): Exp[dsl.reactive.Var[A]] = VarCreation(v)
-
 }
 
 // Optimize Signals with constant dependencies
