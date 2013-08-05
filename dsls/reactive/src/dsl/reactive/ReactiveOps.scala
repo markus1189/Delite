@@ -4,90 +4,26 @@ import scala.virtualization.lms.common._
 import ppl.delite.framework.ops.{DeliteCollectionOpsExp,DeliteOpsExp}
 import ppl.delite.framework.datastruct.scala.DeliteCollection
 
-trait Reactivity extends Base
-    with MeasureOps
+import dsl.reactive.syntax._
+import dsl.reactive.optimizations._
+
+trait Reactivity
+    extends MeasureOps
     with ExpensiveOps
-    with InferredSignals
-    with SignalSyntax
     with VarSyntax
+    with SignalSyntax
     with DepHolderSyntax
     with ReactiveEntitySyntax
-
-trait ReactiveEntitySyntax extends Base {
-  implicit def toReactiveEntityOps(entity: Rep[ReactiveEntity]) =
-    new ReactiveEntityOps(entity)
-
-  class ReactiveEntityOps(entity: Rep[ReactiveEntity]) {
-    def getDependents: Rep[ReactiveEntities] =
-      reactive_entity_dependents(entity)
-
-    def getDependentsList: Rep[List[ReactiveEntity]] =
-      reactive_entity_dependents_list(entity)
-
-    def reEvaluate() = re_evaluate(entity)
-  }
-
-  def reactive_entity_dependents(entity: Rep[ReactiveEntity]): Rep[ReactiveEntities]
-  def reactive_entity_dependents_list(entity: Rep[ReactiveEntity]): Rep[List[ReactiveEntity]]
-  def re_evaluate(elem: Rep[ReactiveEntity]): Rep[Unit]
-}
-
-trait DepHolderSyntax extends Base {
-  class AccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) {
-    def get: Rep[A] = dep_holder_access(dh)
-  }
-
-  implicit def toAccessableDepHolderOps[A:Manifest](
-    dh: Rep[AccessableDepHolder[A]]) =
-      new AccessableDepHolderOps(dh)
-
-  def dep_holder_access[A:Manifest](dh: Rep[AccessableDepHolder[A]]): Rep[A]
-
-  implicit def toDepHolderOps(dh: Rep[DepHolder]): DepHolderOps = new DepHolderOps(dh)
-  class DepHolderOps(dh: Rep[DepHolder]) {
-    def getDependents: Rep[ReactiveEntities] = dep_holder_dependents(dh)
-  }
-
-  def dep_holder_dependents(dh: Rep[DepHolder]): Rep[ReactiveEntities]
-}
-
-trait SignalSyntax extends Base {
-  object Signal {
-    def apply[A:Manifest](dhs: Rep[DepHolder]*)(f: => Rep[A]) =
-      new_behavior(dhs, f)
-  }
-
-  def new_behavior[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Behavior[A]]
-}
-
-trait VarSyntax extends Base {
-  implicit def toVarOps[A:Manifest](v: Rep[dsl.reactive.Var[A]]): VarOps[A] = new VarOps(v)
-  class VarOps[A:Manifest](v: Rep[dsl.reactive.Var[A]]) {
-    def set(value: Rep[A]): Rep[Unit] = dep_holder_set(v, value)
-  }
-
-  def dep_holder_set[A:Manifest](v: Rep[dsl.reactive.Var[A]], value: Rep[A]): Rep[Unit]
-
-  object Var {
-    def apply[A:Manifest](v: Rep[A]): Rep[dsl.reactive.Var[A]] = new_reactive_var(v)
-  }
-
-  def new_reactive_var[A:Manifest](v: Rep[A]): Rep[dsl.reactive.Var[A]]
-}
+    with InferredSignals
 
 trait ReactivityExp extends Reactivity
                     with MeasureOpsExp
-                    with BooleanOpsExp
                     with ExpensiveOpsExp
-                    with OrderingOpsExp
-                    with WhileExp
                     with ListOpsExp
                     with SeqOpsExp
                     with EffectExp
                     with DeliteCollectionOpsExp
                     with DeliteOpsExp
-                    with FunctionsRecursiveExp
-                    with IfThenElseExp
                     with InferredSignalsExp {
 
   case class AccessDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]]) extends Def[A]
@@ -157,8 +93,9 @@ trait ReactivityExp extends Reactivity
 // Optimize Signals with constant dependencies
 trait ReactivityExpOpt extends ReactivityExp {
   private def onlyConstants(dhs: Seq[Exp[DepHolder]]): Boolean =  {
-    val syms: Seq[Sym[DepHolder]] =
-      dhs.filter { case Sym(x) => true; case _ => false }.asInstanceOf[Seq[Sym[DepHolder]]]
+    val syms: Seq[Sym[DepHolder]] = dhs.filter {
+      case Sym(x) => true
+      case _ => false }.asInstanceOf[Seq[Sym[DepHolder]]]
 
     val defs: Seq[Def[Any]] = syms.map(findDefinition(_)).map {
       case Some(TP(_,rhs)) => Some(rhs)
@@ -194,34 +131,6 @@ trait ReactivityExpOpt extends ReactivityExp {
 }
 
 // Infer the dependencies
-trait InferredSignals {
-  this: Reactivity =>
-
-  object ISignal {
-    def apply[A:Manifest](f: => Rep[A]) =
-      new_inferred_signal(f)
-  }
-
-  def new_inferred_signal[A:Manifest](f: => Rep[A]): Rep[Behavior[A]]
-}
-
-trait InferredSignalsExp extends InferredSignals {
-  this: ReactivityExp =>
-
-  override def new_inferred_signal[A:Manifest](f: => Exp[A]): Exp[Behavior[A]] = {
-    new_behavior(inferReactiveAccess(reifyEffects(f)), f)
-  }
-
-  def inferReactiveAccess(bdy: Block[_]): List[Exp[DepHolder]] = {
-      val effects = effectSyms(bdy)
-      val onlySyms = effects.filter { case Sym(x) => true; case _ => false }
-      val defs = onlySyms.map(findDefinition(_)).collect {
-        case Some(TP(_,Reflect(AccessDepHolder(access),_,_))) => access
-      }
-
-    defs.asInstanceOf[List[Exp[DepHolder]]]
-  }
-}
 
 trait TransparentReactivity {
   this: VarSyntax with LiftVariables =>
