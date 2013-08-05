@@ -1,7 +1,7 @@
 package dsl.reactive.syntax
 
-import scala.virtualization.lms.common._
-import dsl.reactive._
+import scala.virtualization.lms.common.Base
+import dsl.reactive.{DepHolder,Behavior}
 
 trait SignalSyntax extends Base {
   object Signal {

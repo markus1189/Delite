@@ -1,7 +1,7 @@
 package dsl.reactive.syntax
 
-import scala.virtualization.lms.common._
-import dsl.reactive._
+import scala.virtualization.lms.common.Base
+import dsl.reactive.{ReactiveEntities,ReactiveEntity}
 
 trait ReactiveEntitySyntax extends Base {
   implicit def toReactiveEntityOps(entity: Rep[ReactiveEntity]) =
