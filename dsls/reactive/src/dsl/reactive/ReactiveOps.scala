@@ -173,6 +173,37 @@ trait ReactivityExpOpt extends ReactivityExp {
 
 }
 
+// Infer the dependencies
+trait InferredSignals {
+  this: Reactivity =>
+
+  object Signal {
+    def apply[A:Manifest](f: => Rep[A]) =
+      new_inferred_signal(f)
+  }
+
+  def new_inferred_signal[A:Manifest](f: => Rep[A]): Rep[Behavior[A]]
+}
+
+trait InferredSignalsExp extends InferredSignals {
+  this: ReactivityExp =>
+
+  override def new_inferred_signal[A:Manifest](f: => Exp[A]): Exp[Behavior[A]] = {
+    val blk = reifyEffects(f)
+    SignalCreation(inferReactiveAccess(blk), blk)
+  }
+
+  def inferReactiveAccess(bdy: Block[_]): List[Exp[DepHolder]] = {
+      val effects = effectSyms(bdy)
+      val onlySyms = effects.filter { case Sym(x) => true; case _ => false }
+      val defs = onlySyms.map(findDefinition(_)).collect {
+        case Some(TP(_,Reflect(AccessDepHolder(access),_,_))) => access
+      }
+
+      defs.asInstanceOf[List[Exp[DepHolder]]]
+    }
+}
+
 trait TransparentReactivity {
   this: Reactivity with LiftVariables =>
 
