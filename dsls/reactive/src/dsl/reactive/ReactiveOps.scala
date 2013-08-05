@@ -12,8 +12,11 @@ trait Reactivity extends Base with MeasureOps with ExpensiveOps with InferredSig
 
   class AccessableDepHolderOps[A:Manifest](dh: Rep[AccessableDepHolder[A]]) {
     def get: Rep[A] = dep_holder_access(dh)
-    def set[A:Manifest](value: Rep[A]): Rep[Unit] = dep_holder_set(dh, value)
-    def getDependents: Rep[ReactiveEntities] = dep_holder_dependents(dh)
+  }
+
+  implicit def toVarOps[A:Manifest](v: Rep[MyVar[A]]): VarOps[A] = new VarOps(v)
+  class VarOps[A:Manifest](v: Rep[MyVar[A]]) {
+    def set(value: Rep[A]): Rep[Unit] = dep_holder_set(v, value)
   }
 
   implicit def toReactiveEntityOps(entity: Rep[ReactiveEntity]) =
@@ -33,17 +36,19 @@ trait Reactivity extends Base with MeasureOps with ExpensiveOps with InferredSig
   def reactive_entity_dependents_list(entity: Rep[ReactiveEntity]): Rep[List[ReactiveEntity]]
   def re_evaluate(elem: Rep[ReactiveEntity]): Rep[Unit]
 
-  implicit def toDepHolderOps(dh: Rep[DepHolder]) = new DepHolderOps(dh)
+  implicit def toDepHolderOps(dh: Rep[DepHolder]): DepHolderOps = new DepHolderOps(dh)
   class DepHolderOps(dh: Rep[DepHolder]) {
     def getDependents: Rep[ReactiveEntities] = dep_holder_dependents(dh)
   }
 
   def dep_holder_access[A:Manifest](dh: Rep[AccessableDepHolder[A]]): Rep[A]
-  def dep_holder_set[A:Manifest](dh: Rep[AccessableDepHolder[A]], value: Rep[A]): Rep[Unit]
+
+  def dep_holder_set[A:Manifest](v: Rep[MyVar[A]], value: Rep[A]): Rep[Unit]
+
   def dep_holder_dependents(dh: Rep[DepHolder]): Rep[ReactiveEntities]
 
   object Var {
-    def apply[A:Manifest](v: Rep[A]): Rep[AccessableDepHolder[A]] = new_reactive_var(v)
+    def apply[A:Manifest](v: Rep[A]): Rep[MyVar[A]] = new_reactive_var(v)
   }
 
   def new_reactive_var[A:Manifest](v: Rep[A]): Rep[MyVar[A]]
@@ -54,6 +59,27 @@ trait Reactivity extends Base with MeasureOps with ExpensiveOps with InferredSig
   }
 
   def new_behavior[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Behavior[A]]
+}
+
+trait SignalSyntax {
+  this: Reactivity =>
+
+  object Signal {
+    def apply[A:Manifest](dhs: Rep[DepHolder]*)(f: => Rep[A]) =
+      new_behavior(dhs, f)
+  }
+
+  def new_behavior[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Behavior[A]]
+}
+
+trait VarSyntax {
+  this: Reactivity =>
+
+  object Var {
+    def apply[A:Manifest](v: Rep[A]): Rep[AccessableDepHolder[A]] = new_reactive_var(v)
+  }
+
+  def new_reactive_var[A:Manifest](v: Rep[A]): Rep[MyVar[A]]
 }
 
 trait ReactivityExp extends Reactivity
@@ -85,8 +111,8 @@ trait ReactivityExp extends Reactivity
     def sync: Exp[Int] => Exp[List[Any]] = _ => List[Any]()
   }
 
-  case class SetDepHolder[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]) extends Def[Unit]
-  override def dep_holder_set[A:Manifest](dh: Exp[AccessableDepHolder[A]], value: Exp[A]): Exp[Unit] = {
+  case class SetDepHolder[A:Manifest](dh: Exp[MyVar[A]], value: Exp[A]) extends Def[Unit]
+  override def dep_holder_set[A:Manifest](dh: Exp[MyVar[A]], value: Exp[A]): Exp[Unit] = {
     reflectEffect(SetDepHolder(dh,value))
     notify(dh)
   }
