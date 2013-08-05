@@ -134,8 +134,8 @@ trait ReactivityExp extends Reactivity
   }
 }
 
+// Optimize Signals with constant dependencies
 trait ReactivityExpOpt extends ReactivityExp {
-
   private def onlyConstants(dhs: Seq[Exp[DepHolder]]): Boolean =  {
     val syms: Seq[Sym[DepHolder]] =
       dhs.filter { case Sym(x) => true; case _ => false }.asInstanceOf[Seq[Sym[DepHolder]]]
