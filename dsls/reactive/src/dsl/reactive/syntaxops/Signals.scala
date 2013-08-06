@@ -9,7 +9,8 @@ trait SignalSyntax extends Base {
       new_behavior(dhs, f)
   }
 
-  def new_behavior[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Behavior[A]]
+  def new_behavior[A:Manifest](
+    dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Behavior[A]]
 }
 
 trait SignalOps extends EffectExp {
