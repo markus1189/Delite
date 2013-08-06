@@ -68,16 +68,6 @@ trait ReactivityExpOpt extends ReactivityExp {
 
 }
 
-// Infer the dependencies
-
-trait TransparentReactivity {
-  this: VarSyntax with LiftVariables =>
-
-  def __newVar[T:Manifest](value: T): Rep[dsl.reactive.Var[T]] = new_reactive_var(unit(value))
-  def __assign[T:Manifest](lhs: Rep[dsl.reactive.Var[T]], rhs: Rep[T]): Rep[Unit] = dep_holder_set(lhs,rhs)
-
-}
-
 trait ScalaGenReactivity extends ScalaGenBase
                          with ScalaGenMeasureOps
                          with ScalaGenExpensiveOps

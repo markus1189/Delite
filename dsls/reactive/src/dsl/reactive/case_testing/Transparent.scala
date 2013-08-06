@@ -1,5 +1,7 @@
 package dsl.reactive
 
+import dsl.reactive.optimizations.TransparentReactivity
+
 object TransparencyRunner extends ReactiveApplicationRunner with TestTransparency
 
 trait TestTransparency extends ReactiveApplication with TransparentReactivity {
