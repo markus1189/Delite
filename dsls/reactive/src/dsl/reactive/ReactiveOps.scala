@@ -2,8 +2,7 @@ package dsl.reactive
 
 import scala.virtualization.lms.common._
 
-import dsl.reactive.syntax._
-import dsl.reactive.ops._
+import dsl.reactive.syntaxops._
 import dsl.reactive.optimizations._
 
 trait Reactivity

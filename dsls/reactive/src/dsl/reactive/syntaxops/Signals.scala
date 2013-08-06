@@ -1,9 +1,16 @@
-package dsl.reactive.ops
+package dsl.reactive.syntaxops
 
-import scala.virtualization.lms.common.EffectExp
+import scala.virtualization.lms.common.{Base, EffectExp}
+import dsl.reactive.{DepHolder,Behavior}
 
-import dsl.reactive.syntax.SignalSyntax
-import dsl.reactive.{DepHolder, Behavior}
+trait SignalSyntax extends Base {
+  object Signal {
+    def apply[A:Manifest](dhs: Rep[DepHolder]*)(f: => Rep[A]) =
+      new_behavior(dhs, f)
+  }
+
+  def new_behavior[A:Manifest](dhs: Seq[Rep[DepHolder]], f: => Rep[A]): Rep[Behavior[A]]
+}
 
 trait SignalOps extends EffectExp {
   this: SignalSyntax =>

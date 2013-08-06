@@ -1,8 +1,8 @@
 package dsl.reactive
 
-object ConvertConstantsRunner extends ReactiveApplicationRunner with ConvertConstants
+object ConvertConstantsRunner extends ReactiveApplicationRunner with ConvertingConstants
 
-trait ConvertConstants extends ReactiveApplication {
+trait ConvertingConstants extends ReactiveApplication {
   def main() = {
     val c1 = ISignal { 42 }
     val c2 = ISignal { 1337 }

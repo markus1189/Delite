@@ -7,8 +7,7 @@ import ppl.delite.framework.datastruct.scala.DeliteCollection
 
 import dsl.reactive.{ReactiveEntity, ReactiveEntities}
 
-import dsl.reactive.syntax.{ReactiveEntitySyntax,VarSyntax}
-import dsl.reactive.ops.VarOps
+import dsl.reactive.syntaxops.{ReactiveEntitySyntax,VarSyntax,VarOps}
 
 trait Propagation extends EffectExp
   with ListOpsExp

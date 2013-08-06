@@ -1,7 +1,7 @@
 package dsl.reactive.optimizations
 
 import scala.virtualization.lms.common.{Base, LiftVariables}
-import dsl.reactive.syntax.VarSyntax
+import dsl.reactive.syntaxops.VarSyntax
 
 trait TransparentReactivity extends Base {
   this: VarSyntax with LiftVariables =>

@@ -1,7 +1,7 @@
 package dsl.reactive.optimizations
 
 import scala.virtualization.lms.common.{Base, EffectExp}
-import dsl.reactive.syntax.{SignalSyntax, VarSyntax}
+import dsl.reactive.syntaxops.{SignalSyntax, VarSyntax}
 import dsl.reactive.{Behavior, DepHolder, ReactivityExp}
 
 trait InferredSignals extends Base {
