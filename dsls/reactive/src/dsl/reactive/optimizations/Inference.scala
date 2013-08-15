@@ -1,7 +1,7 @@
 package dsl.reactive.optimizations
 
 import scala.virtualization.lms.common.{Base, EffectExp}
-import dsl.reactive.syntaxops.{SignalSyntax, VarSyntax}
+import dsl.reactive.syntaxops.{SignalSyntax, VarSyntax, DepHolderOps}
 import dsl.reactive.{Behavior, DepHolder, ReactivityExp}
 
 trait InferredSignals extends Base {
@@ -16,7 +16,7 @@ trait InferredSignals extends Base {
 }
 
 trait InferredSignalsExp extends InferredSignals with EffectExp {
-  this: SignalSyntax with ReactivityExp => // TODO: should be replaced by split up
+  this: SignalSyntax with DepHolderOps =>
 
   override def new_inferred_signal[A:Manifest](f: => Exp[A]): Exp[Behavior[A]] = {
     new_behavior(inferReactiveAccess(reifyEffects(f)), f)
@@ -29,6 +29,6 @@ trait InferredSignalsExp extends InferredSignals with EffectExp {
         case Some(TP(_,Reflect(AccessDepHolder(access),_,_))) => access
       }
 
-    defs.asInstanceOf[List[Exp[DepHolder]]]
+    defs.asInstanceOf[List[Exp[DepHolder]]].distinct
   }
 }
