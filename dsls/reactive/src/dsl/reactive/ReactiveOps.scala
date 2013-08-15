@@ -4,6 +4,7 @@ import scala.virtualization.lms.common._
 
 import dsl.reactive.syntaxops._
 import dsl.reactive.optimizations._
+import dsl.reactive.generalpurpose._
 
 trait Reactivity
     extends MeasureOps
@@ -13,6 +14,7 @@ trait Reactivity
     with DepHolderSyntax
     with ReactiveEntitySyntax
     with InferredSignals
+    with PointSyntax
 
 trait ReactivityExp extends Reactivity
                     with MeasureOpsExp
@@ -26,6 +28,7 @@ trait ReactivityExp extends Reactivity
                     with DepHolderOps
                     with ReactiveEntityOps
                     with Propagation
+                    with PointExp
 
 // Optimize Signals with constant dependencies
 trait ReactivityExpOpt extends ReactivityExp {
@@ -72,6 +75,7 @@ trait ScalaGenReactivity extends ScalaGenBase
                          with ScalaGenExpensiveOps
                          with ScalaGenEffect
                          with ScalaGenOrderingOps
+                         with ScalaGenPoint
                          with ScalaGenWhile {
   val IR: ReactivityExp
   import IR._

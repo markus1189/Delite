@@ -19,6 +19,8 @@ abstract class Var[A:Manifest] extends AccessableDepHolder[A]
 abstract class Signal[+A:Manifest] extends Dependent with AccessableDepHolder[A]
 abstract class ReactiveEntities extends DeliteCollection[ReactiveEntity]
 
+abstract class Point(x: Int,y: Int)
+
 trait ReactiveApplicationRunner extends ReactiveApplication
                                 with DeliteApplication
                                 with ReactiveExp
