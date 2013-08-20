@@ -2,18 +2,18 @@
 
 set -e
 
-THREADS=4
-RUNS=10
-FILE=dsl.reactive.BenchmarkRunner
-
-if [[ -z "$JAVA_HOME" ]]; then
-    echo Setting JAVA_HOME >&2
-    export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
-fi
-
-export SCALA_VIRT_HOME=$HOME/.sbt/0.12.0-Beta2/boot/scala-2.10.0-M1-virtualized/lib/
-
 main() {
+    RUNS="$(if [[ -z "$1" ]]; then echo 5; else echo $1; fi)"
+    THREADS="$(if [[ -z "$2" ]]; then echo 4; else echo $2; fi)"
+    FILE=dsl.reactive.BenchmarkRunner
+
+    if [[ -z "$JAVA_HOME" ]]; then
+      echo Setting JAVA_HOME >&2
+      export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
+    fi
+
+    export SCALA_VIRT_HOME=$HOME/.sbt/0.12.0-Beta2/boot/scala-2.10.0-M1-virtualized/lib/
+
     bin/delitec $FILE &> /dev/null
     if [[ "0" == "$?" ]]; then
         echo Generation successful >&2
