@@ -14,8 +14,8 @@ main() {
     RUNS="$(if [[ -z "$1" ]]; then echo 5; else echo $1; fi)"
     THREADS="$(if [[ -z "$2" ]]; then echo 4; else echo $2; fi)"
 
-    # benchmark_parallel_propagation
-    # benchmark_base_propagation
+    benchmark_parallel_propagation
+    benchmark_base_propagation
     benchmark_library
 }
 
