@@ -9,20 +9,57 @@ PAR_ENABLE_PROP_LINE="    notify(dh) /*<+PROPAGATION_ENABLED+>*/"
 PAR_DISABLE_PROP_LINE="    /*<+PROPAGATION_DISABLED+>*/"
 
 main() {
-    only_par_propagation
     setup_required_env
 
     RUNS="$(if [[ -z "$1" ]]; then echo 5; else echo $1; fi)"
     THREADS="$(if [[ -z "$2" ]]; then echo 4; else echo $2; fi)"
+
+    # benchmark_parallel_propagation
+    # benchmark_base_propagation
+    benchmark_library
+}
+
+function benchmark_parallel_propagation {
+    bench_describe "Delite runtime with parallel propagation"
     FILE=dsl.reactive.BenchmarkRunner
+    OUTPUT_FILE="only_parallel.csv"
+
+    only_par_propagation
+    compile_scala
+    delite_compile
+    OUTPUT=$(run_delite)
+    report_results "$OUTPUT" > $OUTPUT_FILE
+    info "wrote results to: $OUTPUT_FILE"
+    bench_conclude
+}
+
+function benchmark_base_propagation {
+    bench_describe "Delite runtime with base propagation"
+    FILE=dsl.reactive.BenchmarkRunner
+    OUTPUT_FILE="only_base.csv"
+
+    only_base_propagation
+    compile_scala
+    delite_compile
+    OUTPUT=$(run_delite)
+    report_results "$OUTPUT" > $OUTPUT_FILE
+    info "wrote results to: $OUTPUT_FILE"
+    bench_conclude
+}
+
+function benchmark_library {
+    bench_describe "Vanilla library without delite"
+    OUTPUT_FILE="only_library.csv"
 
     compile_scala
+    OUTPUT=$(sbt "; project reactive; run-main dsl.reactive.OnlyLibrary $RUNS" 2>&1)
 
-    delite_compile
+    validate_output "$OUTPUT"
 
-    OUTPUT=$(run_delite)
+    report_results "$OUTPUT" > $OUTPUT_FILE
+    info "wrote results to: $OUTPUT_FILE"
 
-    report_results "$OUTPUT"
+    bench_conclude
 }
 
 function delite_out_filter() {
@@ -148,6 +185,12 @@ function validate_output {
         fail "output is incorrect. did not see 63245986."
     fi
 
+    echo "$INPUT" | grep -q 165580141
+
+    if [[ "0" != "$?" ]]; then
+        fail "output is incorrect. did not see 165580141."
+    fi
+
     info "Output was correct."
 }
 
@@ -168,6 +211,14 @@ function info {
 function fail {
     echo "[FAIL]: $*" >&2
     exit 1
+}
+
+function bench_describe {
+    echo "[BENCHMARK]: $*"
+}
+
+function bench_conclude {
+    echo "[BENCHMARK FINISHED]"
 }
 
 main $*
