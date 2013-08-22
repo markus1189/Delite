@@ -1,6 +1,8 @@
 #!/bin/zsh
 
-set -e
+BASE_LIB_PATH="dsls/reactive/src/dsl/reactive/datastruct/scala/ReactiveLib.scala"
+ENABLE_PROP_LINE="  def dependsOnChanged(dep: DepHolder) { reEvaluate() } /*<+PROPAGATION_ENABLED+>*/"
+DISABLE_PROP_LINE="  def dependsOnChanged(dep: DepHolder) { /*<+PROPAGATION_DISABLED+>*/ }"
 
 main() {
     RUNS="$(if [[ -z "$1" ]]; then echo 5; else echo $1; fi)"
@@ -35,5 +37,31 @@ main() {
 filter() {
     grep "\[TIME\]" | awk '{printf("%s%s", $2, (NR%5 ? "," : "\n")) }'
 }
+
+function enable_base_propagation {
+    sed -i -e "s,.*PROPAGATION_DISABLED.*,$ENABLE_PROP_LINE," $BASE_LIB_PATH
+}
+
+function disable_base_propagation {
+    sed -i -e "s,.*PROPAGATION_ENABLED.*,$DISABLE_PROP_LINE," $BASE_LIB_PATH
+}
+
+function is_propagation_disabled {
+    grep -q 'PROPAGATION_DISABLED' $BASE_LIB_PATH
+
+}
+
+function is_propagation_enabled {
+    grep -q 'PROPAGATION_ENABLED' $BASE_LIB_PATH
+}
+
+is_propagation_enabled
+echo enabled: $?
+is_propagation_disabled
+echo disabled: $?
+
+enable_base_propagation
+disable_base_propagation
+exit
 
 main $*

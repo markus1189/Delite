@@ -97,7 +97,7 @@ class Signal[+T] private (depHolders: Seq[DepHolder])(expr: => T) extends Behavi
 
   def forceReEval() = reEvaluate()
 
-  def dependsOnChanged(dep: DepHolder) { reEvaluate() }
+  def dependsOnChanged(dep: DepHolder) { reEvaluate() } /*<+PROPAGATION_ENABLED+>*/
 }
 
 object Signal {
@@ -131,4 +131,3 @@ class Handler[T] private (exp: => T) extends Dependent {
 object Handler{
 	def apply[T] (exp: => T) = new Handler(exp)
 }
-
