@@ -32,7 +32,7 @@ main() {
 function benchmark_parallel_propagation {
     bench_describe "Delite runtime with parallel propagation"
     FILE=dsl.reactive.BenchmarkRunner
-    OUTPUT_FILE="only_parallel.csv"
+    OUTPUT_FILE="only_parallel_${RUNS}_${THREADS}_${NUM_SIGNALS}_${NUM_REF}.csv"
 
     only_par_propagation
     compile_scala
@@ -46,7 +46,7 @@ function benchmark_parallel_propagation {
 function benchmark_base_propagation {
     bench_describe "Delite runtime with base propagation"
     FILE=dsl.reactive.BenchmarkRunner
-    OUTPUT_FILE="only_base.csv"
+    OUTPUT_FILE="only_base_${RUNS}_${THREADS}_${NUM_SIGNALS}_${NUM_REF}.csv"
 
     only_base_propagation
     compile_scala
@@ -59,7 +59,7 @@ function benchmark_base_propagation {
 
 function benchmark_library {
     bench_describe "Vanilla library without delite"
-    OUTPUT_FILE="only_library.csv"
+    OUTPUT_FILE="only_library_${RUNS}_${THREADS}_${NUM_SIGNALS}_${NUM_REF}.csv"
 
     compile_scala
     info "Running library version."
@@ -174,6 +174,8 @@ function run_delite {
 
 function report_results {
     INPUT="$1"
+
+    echo "# Setup: RUNS=$RUNS, THREADS=$THREADS, NUM_SIGNALS=$NUM_SIGNALS, NUM_REF=$NUM_REF"
 
     echo "start,setup,1st,2nd,end,setup-time,first-propagation,second-propagation,third-propagation,total-time"
 
