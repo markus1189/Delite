@@ -25,7 +25,7 @@ trait DepHolder extends ReactiveEntity {
 
   def removeDependent(dep: Dependent) { dependents -= dep }
 
-  def notifyDependents() {}
+  def notifyDependents() {}  /*<+PROPAGATION_DISABLED+>*/
 
   def getDependents: ReactiveEntities = ReactiveEntities(dependents.toSeq)
   def getDependentsList: List[ReactiveEntity] = dependents.toList
@@ -97,7 +97,7 @@ class Signal[+T] private (depHolders: Seq[DepHolder])(expr: => T) extends Behavi
 
   def forceReEval() = reEvaluate()
 
-  def dependsOnChanged(dep: DepHolder) { reEvaluate() } /*<+PROPAGATION_ENABLED+>*/
+  def dependsOnChanged(dep: DepHolder) { reEvaluate() }
 }
 
 object Signal {

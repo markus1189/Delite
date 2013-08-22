@@ -27,16 +27,14 @@ trait Propagation extends EffectExp
 
   override def dep_holder_set[A:Manifest](dh: Exp[dsl.reactive.Var[A]], value: Exp[A]): Exp[Unit] = {
     super.dep_holder_set(dh,value)
-    notify(dh)
+    notify(dh) /*<+PROPAGATION_ENABLED+>*/
   }
 
   private def notify(e: Exp[ReactiveEntity]) {
     reflectEffect(NotifyDependents(e))
-    // yypIe.getDependentsList.map(_fexA)^
-      e.getDependentsList.map(e => reflectEffect(NotifyDependents(e)))
-    e.getDependentsList.map(_.getDependentsList.map(e => reflectEffect(NotifyDependents(e))))
-      e.getDependentsList.map(_.getDependentsList.map(_.getDependentsList.map(e => reflectEffect(NotifyDependents(e)))))
-    //e.getDependentsList.map(_.getDependentsList.map(_.getDependentsList.map(_.getDependentsList.map(e => reflectEffect(NotifyDependents(e))))))
+    // e.getDependentsList.map(e => reflectEffect(NotifyDependents(e)))
+    // e.getDependentsList.map(_.getDependentsList.map(e => reflectEffect(NotifyDependents(e))))
+    // e.getDependentsList.map(_.getDependentsList.map(_.getDependentsList.map(e => reflectEffect(NotifyDependents(e)))))
   }
 
 
