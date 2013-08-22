@@ -10,31 +10,38 @@ trait ThesisBenchmark extends ReactiveApplication {
 
     val  x0  = Var(3l)
 
+    val NUMBER_OF_SIGNALS = 20
+    val NUMBER_OF_REFERENCED_SIGNALS = 20
+
     val sigs = scala.collection.Seq.fill(20){
       Signal(x0) { expensive(x0.get) }
     }
 
+    def printSigs() {
+      sigs.take(NUMBER_OF_REFERENCED_SIGNALS).map(x => println(x.get))
+    }
+
     printTime() // start time
 
-    sigs.map(x => println(x.get))
+    printSigs()
 
     printTime() // all signals setup
 
     x0.set(value)
 
-    sigs.map(x => println(x.get))
+    printSigs()
 
     printTime() // first propagation
 
     x0.set(value-1)
 
-    sigs.map(x => println(x.get))
+    printSigs()
 
     printTime() // second propagation
 
     x0.set(value+1)
 
-    sigs.map(x => println(x.get))
+    printSigs()
 
     printTime() // final time
   }

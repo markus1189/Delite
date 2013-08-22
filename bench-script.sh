@@ -8,11 +8,21 @@ OPTI_PROP_PATH="dsls/reactive/src/dsl/reactive/optimizations/Propagation.scala"
 PAR_ENABLE_PROP_LINE="    notify(dh) /*<+PROPAGATION_ENABLED+>*/"
 PAR_DISABLE_PROP_LINE="    /*<+PROPAGATION_DISABLED+>*/"
 
+DELITE_SIGNAL_FILE="dsls/reactive/src/dsl/reactive/case_testing/ThesisBenchmark.scala"
+LIBRARY_SIGNAL_FILE="dsls/reactive/src/dsl/reactive/LibraryTests.scala"
+
 main() {
     setup_required_env
 
     RUNS="$(if [[ -z "$1" ]]; then echo 5; else echo $1; fi)"
     THREADS="$(if [[ -z "$2" ]]; then echo 4; else echo $2; fi)"
+    NUM_SIGNALS=20
+    NUM_REF=20
+
+    set_number_of_signals 20
+    set_number_of_referenced_signals 20
+
+    info "Using $NUM_SIGNALS Signals, of which $NUM_REF will actually be referenced"
 
     benchmark_parallel_propagation
     benchmark_base_propagation
@@ -195,6 +205,16 @@ function validate_output {
     fi
 
     info "Output was correct."
+}
+
+function set_number_of_signals {
+    sed -i -e "s/val NUMBER_OF_SIGNALS = .*/val NUMBER_OF_SIGNALS = $1/" $DELITE_SIGNAL_FILE
+    sed -i -e "s/val NUMBER_OF_SIGNALS = .*/val NUMBER_OF_SIGNALS = $1/" $LIBRARY_SIGNAL_FILE
+}
+
+function set_number_of_referenced_signals {
+    sed -i -e "s/val NUMBER_OF_REFERENCED_SIGNALS = .*/val NUMBER_OF_REFERENCED_SIGNALS = $1/" $DELITE_SIGNAL_FILE
+    sed -i -e "s/val NUMBER_OF_REFERENCED_SIGNALS = .*/val NUMBER_OF_REFERENCED_SIGNALS = $1/" $LIBRARY_SIGNAL_FILE
 }
 
 function only_par_propagation {
