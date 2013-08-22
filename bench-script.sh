@@ -52,9 +52,12 @@ function benchmark_library {
     OUTPUT_FILE="only_library.csv"
 
     compile_scala
+    info "Running library version."
     OUTPUT=$(sbt "; project reactive; run-main dsl.reactive.OnlyLibrary $RUNS" 2>&1)
 
     validate_output "$OUTPUT"
+
+    OUTPUT=$(echo "$OUTPUT" | postprocess_output)
 
     report_results "$OUTPUT" > $OUTPUT_FILE
     info "wrote results to: $OUTPUT_FILE"
@@ -62,7 +65,7 @@ function benchmark_library {
     bench_conclude
 }
 
-function delite_out_filter() {
+function postprocess_output {
     grep "\[TIME\]" | awk '{printf("%s%s", $2, (NR%5 ? "," : "\n")) }'
 }
 
@@ -156,7 +159,7 @@ function run_delite {
 
     validate_output "$LOCAL_OUTPUT"
 
-    echo "$LOCAL_OUTPUT" | delite_out_filter
+    echo "$LOCAL_OUTPUT" | postprocess_output
 }
 
 function report_results {
