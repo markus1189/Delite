@@ -14,13 +14,13 @@ LIBRARY_SIGNAL_FILE="dsls/reactive/src/dsl/reactive/LibraryTests.scala"
 main() {
     setup_required_env
 
-    RUNS="$(if [[ -z "$1" ]]; then echo 5; else echo $1; fi)"
-    THREADS="$(if [[ -z "$2" ]]; then echo 4; else echo $2; fi)"
-    NUM_SIGNALS=20
-    NUM_REF=20
+    RUNS=${1:-5}
+    THREADS=${2:-4}
+    NUM_SIGNALS=${3:-20}
+    NUM_REF=${4:-20}
 
-    set_number_of_signals 20
-    set_number_of_referenced_signals 20
+    set_number_of_signals $NUM_SIGNALS
+    set_number_of_referenced_signals $NUM_REF
 
     info "Using $NUM_SIGNALS Signals, of which $NUM_REF will actually be referenced"
 
@@ -210,11 +210,13 @@ function validate_output {
 }
 
 function set_number_of_signals {
+    info "Number of signals set to: $1"
     sed -i -e "s/val NUMBER_OF_SIGNALS = .*/val NUMBER_OF_SIGNALS = $1/" $DELITE_SIGNAL_FILE
     sed -i -e "s/val NUMBER_OF_SIGNALS = .*/val NUMBER_OF_SIGNALS = $1/" $LIBRARY_SIGNAL_FILE
 }
 
 function set_number_of_referenced_signals {
+    info "Number of referenced signals set to: $1"
     sed -i -e "s/val NUMBER_OF_REFERENCED_SIGNALS = .*/val NUMBER_OF_REFERENCED_SIGNALS = $1/" $DELITE_SIGNAL_FILE
     sed -i -e "s/val NUMBER_OF_REFERENCED_SIGNALS = .*/val NUMBER_OF_REFERENCED_SIGNALS = $1/" $LIBRARY_SIGNAL_FILE
 }
