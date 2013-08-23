@@ -11,9 +11,9 @@ trait ThesisBenchmark extends ReactiveApplication {
     val  x0  = Var(3l)
 
     val NUMBER_OF_SIGNALS = 20
-    val NUMBER_OF_REFERENCED_SIGNALS = 20
+    val NUMBER_OF_REFERENCED_SIGNALS = 10
 
-    val sigs = scala.collection.Seq.fill(20){
+    val sigs = scala.collection.Seq.fill(NUMBER_OF_SIGNALS){
       Signal(x0) { expensive(x0.get) }
     }
 
